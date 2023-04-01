@@ -37,7 +37,14 @@ An important high-level concept discussed in the Spaces releasing this code was 
  
 # Recsys
 
+![recsys](https://user-images.githubusercontent.com/3837836/229260535-27c3bcc6-403b-4d71-b301-f381b0b1be33.png)
+
+
+The typical recommender system pipeline has four steps: candidate generation, ranking, filtering, and serving. 
+
 ## Input Data
+
+
 
 + The system starts with [500 million tweets posted on a daily basis](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm). It filters to showing you one of 1500 possible tweet generated candidates. 
 
