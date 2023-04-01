@@ -4,11 +4,14 @@ An annotated look through the release of the Twitter algorithm, through the cont
 
 Curated by [Igor Brigadir](https://github.com/igorbrigadir) and [Vicki Boykis](https://github.com/veekaybee)
 
+# Source Data 
 [Twitter Algo Repo](https://github.com/twitter/the-algorithm) || [Twitter ML Algo Repo](https://github.com/twitter/the-algorithm-ml) || [Blog Post](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm)
 
 # Architecture
 
 # Input Data
+
++ The system starts with [500 million tweets posted on a daily basis](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm). It filters to showing you one of 1500 possible tweet generated candidates. 
 
 
 # Candidate Generators
@@ -23,7 +26,7 @@ Curated by [Igor Brigadir](https://github.com/igorbrigadir) and [Vicki Boykis](h
 
 # Business Terms and Logic
 
-
++ [Twepoch](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/java/com/twitter/search/earlybird_root/filters/ResultTierCountFilter.java#L106), `2010-11-04T01:42:54Z` is the release date of Twitter
 
 # Changes
 
