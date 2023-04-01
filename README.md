@@ -86,3 +86,13 @@ It filters to showing you one of 1500 possible tweet generated candidates.
 + 2 hours after it was released, [Twitter removed](https://github.com/twitter/the-algorithm/commit/ec83d01dcaebf369444d75ed04b3625a0a645eb9) feature flags that specifically higlighted Elon's account
 
 ## Resources for Learning More about Recsys
+
++ @karlhigley's [blog](https://practicalrecs.com/the-rest-of-the-owl.html) and [thread of threads](https://twitter.com/karlhigley/status/1138122648934916097) are very accessible things about Recommender Systems in practice.
+
++ A good Recommender Systems entry point is the Google Machine Learning for [Recommender Systems course](https://developers.google.com/machine-learning/recommendation), it also has a good [glossary](https://developers.google.com/machine-learning/glossary/recsystems) of terms.
+
++ The biggest academic recsys community is [ACM Recsys](https://recsys.acm.org/) and state-of-the-art recommender systems research is usually openly available in the [proceedings](https://dl.acm.org/conference/recsys). A lot of the presentations are on [youtube](https://www.youtube.com/@acmrecsys/videos).
+
++ Admittedly out of date, but still useful, is the [RecSys Wiki](https://www.recsyswiki.com/wiki/Main_Page).
+
++ The latest edition of the [Recommender Systems Handbook](https://link.springer.com/book/10.1007/978-1-0716-2197-4) is also a good book that covers the field well.
