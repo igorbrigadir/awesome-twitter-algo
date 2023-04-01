@@ -13,7 +13,12 @@ An important high-level concept discussed in the Spaces releasing this code was 
 # Code Links
 [Twitter Algo Repo](https://github.com/twitter/the-algorithm) || [Twitter ML Algo Repo](https://github.com/twitter/the-algorithm-ml) || [Blog Post](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm)
 
-# Architecture
+# Architecture Diagram!
+
+[architecture](https://user-images.githubusercontent.com/3837836/229260006-ce800791-6831-4a6c-bf52-1444becb27cc.png)
+
+
+[Link to update here.](https://whimsical.com/twitter-archtecture-PoR7TJb1eac2UofLVSY28e)
 
 # Input Data
 
