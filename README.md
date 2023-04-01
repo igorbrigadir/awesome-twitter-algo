@@ -67,9 +67,30 @@ It filters to showing you one of 1500 possible tweet generated candidates.
 
 ## Rankers
 
-The "Heavy Ranker" is a [parallel masknet](https://arxiv.org/abs/2102.07619). Majority of the code for this is in the [ML repo](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md)
++ **Recap** The "Heavy Ranker" is a [parallel masknet](https://arxiv.org/abs/2102.07619). Majority of the code for this is in the [ML repo](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md). The [ranker itself](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md) is run after the candidate generators. 
+
+[Input features](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/FEATURES.md) 
+
+Ouptus are predictions on how user will respond to the tweet: 
++ probability the user will favorite the Tweet
++ probability the user will click into the conversation of this tweet and reply or like a Tweet
++ probability the user will click into the conversation of this Tweet and stay there for at least 2 minutes.
++probability the user will react negatively (requesting "show less often" on the Tweet or author, block or mute the Tweet author) 
++ probability the user opens the Tweet author profile and Likes or replies to a Tweet
++ probability the user replies to the Tweet
++ probability the user replies to the Tweet and this reply is engaged by the Tweet author 
++ probability the user will click Report Tweet 
++ probability the user will ReTweet the Tweet
++ probability (for a video Tweet) that the user will watch at least half of the video
+
+All of these are combined and weighted into a score. Hyperparameters for the model [and weighting are here.](https://github.com/twitter/the-algorithm-ml/blob/78c3235eee5b4e111ccacb7d48e80eca019e480c/projects/home/recap/config/local_prod.yaml#L1)
+
++ The Light Ranker
+
 
 ## Filters
+
++ Coming into this stage from the light ranker, there are other heuristics that are [used to filter out more tweets after scoring.](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md)
 
 + Remove [out-of-network competitor site URLs](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/filter/OutOfNetworkCompetitorURLFilter.scala) from potential offered candidate Tweets
 
