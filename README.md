@@ -11,7 +11,7 @@ This code focuses on the services used to build the Home timeline `For You` feed
 
 # Contributing
 
-We're happy to take changes that add and contextualize Twitter's recommendations algorithm as it's been released over the past week. To contribute, please submit a PR with good formatting and grammar and lots of links to references where relevant. 
+We're happy to take changes that add and contextualize Twitter's recommendations algorithm as it's been released over the past week. To contribute, please submit a PR with good formatting and grammar and lots of links to references where relevant. We're especially happy for feedback from tweeps or former tweeps who can tell us where we got it wrong. 
 
  # High-level Context
 An important high-level concept discussed in the Spaces releasing this code was in-network and out-of-network. In-network tweets are those from people you follow, out-of-network is everyone else. A blend of 50%/50% are offered in the daily ~1500 tweets run through rankers. 
@@ -26,34 +26,40 @@ An important high-level concept discussed in the Spaces releasing this code was 
 
 [Link to update here.](https://whimsical.com/twitter-archtecture-PoR7TJb1eac2UofLVSY28e)
 
-# Input Data
+ # Programming Languages
+ 
+ The released code comes in a variety of languages. The most common languages used at Twitter are: 
+ 
+# Recsys
+
+## Input Data
 
 + The system starts with [500 million tweets posted on a daily basis](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm). It filters to showing you one of 1500 possible tweet generated candidates. 
 
 
-# Candidate Generators
+## Candidate Generators
 
 
-# Rankers
+## Rankers
 
 
 
-# Filters
+## Filters
 
 + Remove [out-of-network competitor site URLs](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/filter/OutOfNetworkCompetitorURLFilter.scala) from potential offered candidate Tweets
 
-# Timeline Mixer
+## Timeline Mixer
 
 + The timeline mixer has a [ratio where](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/home-mixer/server/src/main/scala/com/twitter/home_mixer/param/HomeGlobalParams.scala#L89) verified blue checkmark tweets are offered twice as more if they're out-of-network and four times as more if they're in-network. 
 
 
-# Business Terms and Logic
+## Business Terms and Logic
 
 + [Twepoch](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/java/com/twitter/search/earlybird_root/filters/ResultTierCountFilter.java#L106), `2010-11-04T01:42:54Z` is the release date of Twitter
 + WTF - [Who to follow](https://web.stanford.edu/~rezab/papers/wtf_overview.pdf)
 
-# Changes
+## Changes
 
 + 2 hours after it was released, [Twitter removed](https://github.com/twitter/the-algorithm/commit/ec83d01dcaebf369444d75ed04b3625a0a645eb9) feature flags that specifically higlighted Elon's account
 
-# Resources for Learning More about Recsys
+## Resources for Learning More about Recsys
