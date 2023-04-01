@@ -27,6 +27,7 @@ Curated by [Igor Brigadir](https://github.com/igorbrigadir) and [Vicki Boykis](h
 # Business Terms and Logic
 
 + [Twepoch](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/java/com/twitter/search/earlybird_root/filters/ResultTierCountFilter.java#L106), `2010-11-04T01:42:54Z` is the release date of Twitter
++ WTF - [Who to follow](https://web.stanford.edu/~rezab/papers/wtf_overview.pdf)
 
 # Changes
 
