@@ -30,7 +30,8 @@ What was released? The majority of the code and algorithms, but not the data or 
 # Architecture Diagram!
 
 
-![twitter architecture](https://user-images.githubusercontent.com/3837836/229310502-bb0b4167-15d6-4623-a6c2-8952a90c8000.png)
+![twitter architecture@2x (1)](https://user-images.githubusercontent.com/3837836/229310537-620628de-7a81-4ced-b34f-94eb3f3e2370.png)
+
 
 
 [Link to update here.](https://whimsical.com/twitter-archtecture-PoR7TJb1eac2UofLVSY28e)
