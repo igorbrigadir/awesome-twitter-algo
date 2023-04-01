@@ -22,6 +22,9 @@ One thing that's immediately obvious is that this is not the entire codebase or 
 An important high-level concept discussed in the Spaces releasing this code was in-network and out-of-network. In-network tweets are those from people you follow, out-of-network is everyone else. A blend of 50%/50% are offered in the daily ~1500 tweets run through rankers. 
 
 # Code Links
+
+What was released? The majority of the code and algorithms, but not the data or parameters or configurations or build tools of the Recommneder Systems behind "For You" timeline recommendations. The Candidate Retrieval code was also not released, and neither was the Trust and Safety components, and the Ads components - those remain closed off. No User Data or credentials were inside the repositories and code comments were sanitized (or at least, none were obviously there on first look).
+
 [Twitter Algo Repo](https://github.com/twitter/the-algorithm) || [Twitter ML Algo Repo](https://github.com/twitter/the-algorithm-ml) || [Blog Post](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm)
 
 # Architecture Diagram!
@@ -60,12 +63,11 @@ It filters to showing you one of 1500 possible tweet generated candidates.
 
 ## Candidate Generators
 
-+ The largest candidate generator is Earlybird, a Lucense 
-
++ The largest candidate generator is [Earlybird](https://blog.twitter.com/engineering/en_us/a/2011/the-engineering-behind-twitter-s-new-search-experience), a Lucense based real-time retrieval engine.
 
 ## Rankers
 
-
+The "Heavy Ranker" is a [parallel masknet](https://arxiv.org/abs/2102.07619). Majority of the code for this is in the [ML repo](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md)
 
 ## Filters
 
