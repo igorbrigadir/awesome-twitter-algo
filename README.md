@@ -29,7 +29,8 @@ What was released? The majority of the code and algorithms, but not the data or 
 
 # Architecture Diagram!
 
-![architecture](https://user-images.githubusercontent.com/3837836/229260006-ce800791-6831-4a6c-bf52-1444becb27cc.png)
+
+![twitter architecture](https://user-images.githubusercontent.com/3837836/229310502-bb0b4167-15d6-4623-a6c2-8952a90c8000.png)
 
 
 [Link to update here.](https://whimsical.com/twitter-archtecture-PoR7TJb1eac2UofLVSY28e)
@@ -41,7 +42,7 @@ What was released? The majority of the code and algorithms, but not the data or 
  + Java, used in Lucene for search indexing
  + Scala, particularly several computational frameworks including Scalding and Scio for parallel cluster computing computations
  + [Thrift](https://thrift.apache.org/), a cross-platform framework for RPC calls originally developed at Facebook(Meta)
- + Python for the machine learning models in the stack 
+ + Python for the machine learning models in the stack, includes both PyTorch and Tensorflow (legacy) code
  
 # Recsys
 
@@ -57,13 +58,18 @@ The typical recommender system pipeline has four steps: candidate generation, ra
 
 + The system starts with [500 million tweets posted on a daily basis](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm). The [input data](https://blog.twitter.com/engineering/en_us/topics/infrastructure/2021/processing-billions-of-events-in-real-time-at-twitter-) is processed in this manner. 
 
+<img width="841" alt="Screenshot 2023-04-01 at 3 26 24 PM" src="https://user-images.githubusercontent.com/3837836/229310405-a4839079-bb77-427e-bfe8-4cebd1d1a6af.png">
+
++ Streaming Dataflow jobs to apply deduping
++ Perform real-time aggregation and sink data into BigTable
+
 
 It filters to showing you one of 1500 possible tweet generated candidates. 
 
 
 ## Candidate Generators
 
-+ The largest candidate generator is [Earlybird](https://blog.twitter.com/engineering/en_us/a/2011/the-engineering-behind-twitter-s-new-search-experience), a Lucense based real-time retrieval engine.
++ The largest candidate generator is [Earlybird](https://blog.twitter.com/engineering/en_us/a/2011/the-engineering-behind-twitter-s-new-search-experience), a Lucene based real-time retrieval engine. There is an [Earlybird paper.](http://notes.stephenholiday.com/Earlybird.pdf) 
 
 ## Rankers
 
