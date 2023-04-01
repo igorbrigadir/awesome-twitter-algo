@@ -30,6 +30,11 @@ An important high-level concept discussed in the Spaces releasing this code was 
  
  The released code comes in a variety of languages. The most common languages used at Twitter are: 
  
+ + Java
+ + Scala, particularly several computational frameworks including Scalding and Scio for parallel cluster computing computations
+ + [Thrift](https://thrift.apache.org/), a cross-platform framework for RPC calls originally developed at Facebook(Meta)
+ + Python for the machine learning models in the stack 
+ 
 # Recsys
 
 ## Input Data
