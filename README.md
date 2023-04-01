@@ -12,7 +12,13 @@ This code focuses on the services used to build the Home timeline `For You` feed
 
 We're happy to take changes that add and contextualize Twitter's recommendations algorithm as it's been released over the past week. To contribute, please submit a PR with good formatting and grammar and lots of links to references where relevant. We're especially happy for feedback from tweeps or former tweeps who can tell us where we got it wrong. 
 
- # High-level Context
+ # High-level Context and Summary
+One thing that's immediately obvious is that this is not the entire codebase or even a working majority of it. Missing from this codebase are 1) many flows that process,enrich, and refine model input data
+2) YAML configuration metafiles which could tell us quite a bit about how the code actually works. There are only 7 of them, the rest have been redacted.
+3) Most code related to spinning up the actual infrastructure
+4) Git commit history that shows us how some of this code has evolved
+5) A large portion of the trust and safety codebase. 
+
 An important high-level concept discussed in the Spaces releasing this code was in-network and out-of-network. In-network tweets are those from people you follow, out-of-network is everyone else. A blend of 50%/50% are offered in the daily ~1500 tweets run through rankers. 
 
 # Code Links
