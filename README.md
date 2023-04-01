@@ -15,7 +15,7 @@ An important high-level concept discussed in the Spaces releasing this code was 
 
 # Architecture Diagram!
 
-[architecture](https://user-images.githubusercontent.com/3837836/229260006-ce800791-6831-4a6c-bf52-1444becb27cc.png)
+![architecture](https://user-images.githubusercontent.com/3837836/229260006-ce800791-6831-4a6c-bf52-1444becb27cc.png)
 
 
 [Link to update here.](https://whimsical.com/twitter-archtecture-PoR7TJb1eac2UofLVSY28e)
