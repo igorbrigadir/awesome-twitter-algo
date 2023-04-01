@@ -78,8 +78,14 @@ It filters to showing you one of 1500 possible tweet generated candidates.
 
 ## Business Terms and Logic
 
-+ [Twepoch](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/java/com/twitter/search/earlybird_root/filters/ResultTierCountFilter.java#L106), `2010-11-04T01:42:54Z` is the release date of Twitter
+These are Twitter specific terms and names that keep coming up across different code bases and blog posts.
+
++ Twepoch - A "magic number" `1288834974657L`, which is a timestamp for `2010-11-04T01:42:54Z` the date that Twitter introduced the Snowflake ID system, used as Twitter's own ["Unix Epoch"](https://en.wikipedia.org/wiki/Epoch_(computing))
++ Snowflake - Twitter's system for [assigning unique IDs](https://blog.twitter.com/engineering/en_us/a/2010/announcing-snowflake) to tweets, users, lists, DMs, media etc. 
 + WTF - [Who to follow](https://web.stanford.edu/~rezab/papers/wtf_overview.pdf)
++ DDG - Duck Duck Goose, Twitter's [A/B Testing Platform](https://blog.twitter.com/engineering/en_us/a/2015/twitter-experimentation-technical-overview).
++ Earlybird - Twitter's Lucene based real-time search index. [Notes](https://stephenholiday.com/notes/earlybird/) and a [blog post here](https://blog.twitter.com/engineering/en_us/a/2011/the-engineering-behind-twitter-s-new-search-experience).
++ "Unregretted user minutes" - the metric Twitter publicly states is the thing they are optimizing for. It is unknown how exactly they measure this.
 
 ## Changes
 
