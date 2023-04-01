@@ -117,6 +117,10 @@ These are Twitter specific terms and names that keep coming up across different 
 + Earlybird - Twitter's Lucene based real-time search index. [Notes](https://stephenholiday.com/notes/earlybird/) and a [blog post here](https://blog.twitter.com/engineering/en_us/a/2011/the-engineering-behind-twitter-s-new-search-experience).
 + "Unregretted user minutes" - the metric Twitter publicly states is the thing they are optimizing for. It is unknown how exactly they measure this.
 
+## Bias and Manipulation
+
+A WIP section for cases of potential bias, manipulation, favouritism, hacks, etc.
+
 ## Changes
 
 + 2 hours after it was released, [Twitter removed](https://github.com/twitter/the-algorithm/commit/ec83d01dcaebf369444d75ed04b3625a0a645eb9) feature flags that specifically higlighted Elon's account
