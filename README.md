@@ -42,6 +42,9 @@ An important high-level concept discussed in the Spaces releasing this code was 
 
 The typical recommender system pipeline has four steps: candidate generation, ranking, filtering, and serving. 
 
++ Candidate generation occurs when you have millions or billions of potential items in your source data based on user-item interactions. This piece usually includes collaborative filtering or neural algorithms to reduce the size of the candiate dataset computtationally. 
++  These need to then be ranked against each other, filtered against business logic and blended and served to the user in some kind of surface area, in our case the For You feed. 
+
 ## Input Data
 
 
