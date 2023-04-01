@@ -4,7 +4,7 @@ An annotated look through the release of the Twitter algorithm, through the cont
 
 Curated by Igor Brigadir and Vicki Boykis
 
-Twitter Algo || Twitter ML Algo || [Blog Post](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm)
+[Twitter Algo Repo](https://github.com/twitter/the-algorithm) || [Twitter ML Algo Repo](https://github.com/twitter/the-algorithm-ml) || [Blog Post](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm)
 
 # Architecture
 
