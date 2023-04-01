@@ -1,4 +1,4 @@
-# Awesome Twitter Algo
+# Awesome Twitter Algo :bird:
 
 An annotated look through the release of the Twitter algorithm, through the context of engineering and recsys, with notes from repo creators on significance of specific parts of the code. 
 
