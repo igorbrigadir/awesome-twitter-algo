@@ -52,7 +52,10 @@ The typical recommender system pipeline has four steps: candidate generation, ra
 
 ## Input Data
 
-+ The system starts with [500 million tweets posted on a daily basis](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm). It filters to showing you one of 1500 possible tweet generated candidates. 
++ The system starts with [500 million tweets posted on a daily basis](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm). The [input data](https://blog.twitter.com/engineering/en_us/topics/infrastructure/2021/processing-billions-of-events-in-real-time-at-twitter-) is processed in this manner. 
+
+
+It filters to showing you one of 1500 possible tweet generated candidates. 
 
 
 ## Candidate Generators
