@@ -2,7 +2,6 @@
 
 Curated by [Igor Brigadir](https://github.com/igorbrigadir) and [Vicki Boykis](https://github.com/veekaybee).
 
-
 An annotated look through the release of the Twitter algorithm, through the context of engineering and recsys, with notes from repo creators on significance of specific parts of the code. Since it can be hard to parse through so much code and derive meaning and context, we do it for you!
 
 This code focuses on the services used to build the Home timeline `For You` feed, the algorithmic tab that is now served first on both web and mobile next to the   `Following` feed. 
@@ -30,7 +29,7 @@ An important high-level concept discussed in the Spaces releasing this code was 
  
  The released code comes in a variety of languages. The most common languages used at Twitter are: 
  
- + Java
+ + Java, used in Lucene for search indexing
  + Scala, particularly several computational frameworks including Scalding and Scio for parallel cluster computing computations
  + [Thrift](https://thrift.apache.org/), a cross-platform framework for RPC calls originally developed at Facebook(Meta)
  + Python for the machine learning models in the stack 
@@ -47,12 +46,12 @@ The typical recommender system pipeline has four steps: candidate generation, ra
 
 ## Input Data
 
-
-
 + The system starts with [500 million tweets posted on a daily basis](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm). It filters to showing you one of 1500 possible tweet generated candidates. 
 
 
 ## Candidate Generators
+
++ The largest candidate generator is Earlybird, a Lucense 
 
 
 ## Rankers
