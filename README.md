@@ -173,6 +173,8 @@ Outputs are predictions on how user will respond to the tweet:
 
 All of these are combined and weighted into a score. Hyperparameters for the model [and weighting are here.](https://github.com/twitter/the-algorithm-ml/blob/78c3235eee5b4e111ccacb7d48e80eca019e480c/projects/home/recap/config/local_prod.yaml#L1)
 
+For more details on the model, see the [Architecture overview](masknet.md).
+
 + The Light Ranker
 
 
