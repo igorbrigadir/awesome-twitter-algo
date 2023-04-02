@@ -119,14 +119,21 @@ These are Twitter specific terms and names that keep coming up across different 
 
 ## Bias and Manipulation
 
-Cases of potential bias, manipulation, favouritism, hacks, etc.
+Cases of potential bias, manipulation, favouritism, hacks, etc. The focus on this repository is on the concrete, techincal aspects of the code, not speculating on anything twitter may or may not have done. That exercise is left to the reader, however, there are some technical aspects that should still be described about these popular accusations, this is a section for those. Unfortunately, much of the configuration that would contain specific instances of interventions is not in the code.
 
-+ There are two mentions related to Ukraine in the Twiter Algo repo. Whereas [one of them](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/visibilitylib/src/main/scala/com/twitter/visibility/rules/PublicInterestRules.scala#L54) is a flag for Ukraine-related misinformation possibly used for filtering, moderation, or warning labels, there is another _safety label_ for Twitter Spaces called _[UkraineCrisisTopic](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/visibilitylib/src/main/scala/com/twitter/visibility/models/SpaceSafetyLabelType.scala#L39)_. Considering the three facts that:
+### Deboosting Rival Sites
+
+It was long speculated youtube links get massively deboosted, and Spaces links massively boost Tweets in recommendations. There are no specific references to this in the code. However, there are filters that could be configured for this, referencing [OutOfNetworkCompetitorURLFilter](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/home-mixer/server/src/main/scala/com/twitter/home_mixer/product/scored_tweets/ScoredTweetsRecommendationPipelineConfig.scala#L231) for example.
+
+### Elon Musk feature
+
+The Elon Musk / Democrat / Republican Code: [Now Removed](https://github.com/twitter/the-algorithm/commit/ec83d01dcaebf369444d75ed04b3625a0a645eb9). One of the first widely shared cases, falsely assuming this is something that directly affects Recommendations when it was actually for internal A/B testing, to monitor for effects (DDG is Duck Duck Goose, the A/B Testing Platfom). It was also mentioned in [the space](https://twitter.com/elonmusk/status/1641880448061120513) and denied there. However, a former twitter employee also offered an [alternative explanation](https://twitter.com/igb/status/1641910616939167745) (A/B Testing measures behavior, so one way or another Twitter is tuning your TL, indirectly).
+
+### Ukraine
+There are two mentions related to Ukraine in the Twiter Algo repo. Whereas [one of them](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/visibilitylib/src/main/scala/com/twitter/visibility/rules/PublicInterestRules.scala#L54) is a flag for Ukraine-related misinformation used for moderation, or warning labels, there is another _safety label_ for Twitter Spaces called _[UkraineCrisisTopic](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/visibilitylib/src/main/scala/com/twitter/visibility/models/SpaceSafetyLabelType.scala#L39)_. Here are some facts about these labels and their function:
   * Each safety label "[describes a particular policy violation, and usually leads to reduced visibility of the labeled entity in product surfaces](https://github.com/twitter/the-algorithm/blob/main/visibilitylib/README.md)"
+  * `SafetyLabel` results in tweet interstitial or notice, are publicly [documented here previously](https://help.twitter.com/en/resources/addressing-misleading-info) and specifically for [Armed Conflicts here](https://help.twitter.com/en/rules-and-policies/crisis-misinformation).
   * All [other Twitter Spaces safety labels](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/visibilitylib/src/main/scala/com/twitter/visibility/models/SpaceSafetyLabelType.scala#L26) are related to misinformation, NSFW, toxic or harmful content, DMCA takedowns, etc.
-  * The name of the label is specifically _UkraineCrisisTopic_, not, e.g., _UkraineCrisisMisinformation_ which would be similar to the other misinformation-related labels,
-
-  this seems to point that Twitter might be reducing visibility of Twitter Spaces about "Ukraine Conflict".
 
 ## Changes
 
