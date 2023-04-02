@@ -13,11 +13,13 @@ This code focuses on the services used to build the Home timeline `For You` feed
 We're happy to take changes that add and contextualize Twitter's recommendations algorithm as it's been released over the past week. To contribute, please submit a PR with good formatting and grammar and lots of links to references where relevant. We're especially happy for feedback from tweeps or former tweeps who can tell us where we got it wrong. 
 
  # High-level Context and Summary
-One thing that's immediately obvious is that this is not the entire codebase or even a working majority of it. Missing from this codebase are 1) many flows that process,enrich, and refine model input data
+One thing that's immediately obvious is that this is not the entire codebase or even a working majority of it. Missing from this codebase are 
+
+1) many flows that process,enrich, and refine model input data
 2) YAML configuration metafiles which could tell us quite a bit about how the code actually works. There are only 7 of them, the rest have been redacted.
 3) Most code related to spinning up the actual infrastructure
 4) Git commit history that shows us how some of this code has evolved
-5) A large portion of the trust and safety codebase. 
+5) A large portion of the trust and safety codebase, which Twitter [has noted they've left out for now](https://github.com/twitter/the-algorithm/tree/main/trust_and_safety_models#trust-and-safety-models)
 
 An important high-level concept discussed in the Spaces releasing this code was in-network and out-of-network. In-network tweets are those from people you follow, out-of-network is everyone else. A blend of 50%/50% are offered in the daily ~1500 tweets run through rankers. 
 
@@ -27,50 +29,129 @@ What was released? The majority of the code and algorithms, but not the data or 
 
 [Twitter Algo Repo](https://github.com/twitter/the-algorithm) || [Twitter ML Algo Repo](https://github.com/twitter/the-algorithm-ml) || [Blog Post](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm)
 
-# Architecture Diagram!
-
+# Recsys Architecture Diagram
 
 ![twitter architecture@2x (1)](https://user-images.githubusercontent.com/3837836/229310537-620628de-7a81-4ced-b34f-94eb3f3e2370.png)
 
-
-
 [Link to update here.](https://whimsical.com/twitter-archtecture-PoR7TJb1eac2UofLVSY28e)
 
- # Programming Languages
+
+# Twitter Data-Centric Historical Architecture Context 
+
+There is a very, very old post from 2013 on [High Scalability](http://highscalability.com/blog/2013/7/8/the-architecture-twitter-uses-to-deal-with-150m-active-users.html) which gives some context to how these systems were initially constructed. 
+
+As context, Twitter initially ran all workloads on-prem but has been [moving to Google Cloud.](https://cloud.google.com/blog/products/data-analytics/how-twitter-modernized-its-data-processing-with-google-cloud). In 2019, Twitter began by migrating to BigQuery and DataFlow from a data and analytics perspective. Before the move to BigQuery, [much of the data was stored in HDFS using Thrift](https://blog.twitter.com/engineering/en_us/topics/infrastructure/2022/scaling-data-access-by-moving-an-exabyte-of-data-to-google-cloud). It currently lives in BigQuery and is processed for many of the pipelines described below using [DataFlow](https://cloud.google.com/dataflow), GCP's Spark/Scalding-processing equivaent platform.  
+
+ # Programming Languages and Frameworks
  
  The released code comes in a variety of languages. The most common languages used at Twitter are: 
+
+ ## Java
  
- + Java, used in Lucene for search indexing
- + Scala, particularly several computational frameworks including Scalding and Scio for parallel cluster computing computations
- + [Thrift](https://thrift.apache.org/), a cross-platform framework for RPC calls originally developed at Facebook(Meta)
+ + Used in Lucene for search indexing
+ + Used in the [GraphJet](https://github.com/twitter/GraphJet) library
+
+
+ ## Scala
+ + [Scalding](https://github.com/twitter/scalding), written at Twitter, pre-cursor to Spark
+ + [Scio](https://github.com/spotify/scio) for parallel cluster computing computations
+
+ ## Python
  + Python for the machine learning models in the stack, includes both PyTorch and Tensorflow (legacy) code
- 
+
+ ## Frameworks and Metalanguages
+
+ + Bazel for [building Scala and Java services](https://bazel.build/)
+ + Starlark for [bazel configuration](https://github.com/bazelbuild/starlark)
+  + [Thrift](https://thrift.apache.org/), a cross-platform framework for RPC calls originally developed at Facebook(Meta)
+  + [Hadoop](https://blog.twitter.com/engineering/en_us/topics/infrastructure/2023/kerberizing-hadoop-clusters-at-twitter) - Twitter still runs one of the largest installs of Hadoop out there
+
+# Internal Libraries 
+
++ [Finagle](https://twitter.github.io/finagle/) is a service written in Scala with Java and Scala APIs used to manage RPCs
++ Snowflake is [a service that generates unique identifiers](https://blog.twitter.com/engineering/en_us/a/2010/announcing-snowflake) for each tweet based on timestamp, worker number, and sequence number
+
 # Recsys
 
 ![recsys](https://user-images.githubusercontent.com/3837836/229260535-27c3bcc6-403b-4d71-b301-f381b0b1be33.png)
 
 
-The typical recommender system pipeline has four steps: candidate generation, ranking, filtering, and serving. 
+The typical recommender system pipeline has four steps: candidate generation, ranking, filtering, and serving. Twitter has many pipelines for performing verious parts of this this across the overall released codebase. 
 
-+ Candidate generation occurs when you have millions or billions of potential items in your source data based on user-item interactions. This piece usually includes collaborative filtering or neural algorithms to reduce the size of the candiate dataset computtationally. 
-+  These need to then be ranked against each other, filtered against business logic and blended and served to the user in some kind of surface area, in our case the For You feed. 
++ **Candidate generation** occurs when you have millions or billions of potential items in your source data based on user-item interactions. This piece usually includes collaborative filtering or neural algorithms to reduce the size of the candiate dataset for downstream tasks.  
++  These need to then be **ranked** against each other, **filtered** against business logic and blended and served to the user in a given surface area, in this case the `For You` feed in the Twitter timeline. 
 
 ## Input Data
 
-+ The system starts with [500 million tweets posted on a daily basis](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm). The [input data](https://blog.twitter.com/engineering/en_us/topics/infrastructure/2021/processing-billions-of-events-in-real-time-at-twitter-) is processed in this manner. 
++ The system starts with [500 million tweets posted on a daily basis](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm). 
+
+The [input data](https://blog.twitter.com/engineering/en_us/topics/infrastructure/2021/processing-billions-of-events-in-real-time-at-twitter-) 
+comes from: 
+
++ Kafka
++ Twitter Eventbus
++ GCS
++ Vertica
++ [Manhattan](https://blog.twitter.com/engineering/en_us/a/2014/manhattan-our-real-time-multi-tenant-distributed-database-for-twitter-scale), a real-time multitenant distributed database that was initially developed as a serving layer on top of Hadoop and includes both observability and other metrics.
+
 
 <img width="841" alt="Screenshot 2023-04-01 at 3 26 24 PM" src="https://user-images.githubusercontent.com/3837836/229310405-a4839079-bb77-427e-bfe8-4cebd1d1a6af.png">
 
+In migrating to GCP, the current data ingest looks something like this: 
 + Streaming Dataflow jobs to apply deduping
 + Perform real-time aggregation and sink data into BigTable
 
+That data is then made available to the candidate generation phase. There is not much about the actual data, even what a schema might look like, in the repo. 
 
-It filters to showing you one of 1500 possible tweet generated candidates. 
+## Candidate Generators 
+(also called "features" in the chart)
+
+### GraphJet
+--- 
++ [GraphJet](https://github.com/twitter/GraphJet) - A realtime Java graph processing library that allows for in-memory processing on a single server and focuses on providing content recommendations. [Paper here.](http://www.vldb.org/pvldb/vol9/p1281-sharma.pdf) Recommendations are provided based on shared interests, correlated activities, and a number of other input signals.  GraphJet maintains a [realtime bipartite interaction graph](https://mathworld.wolfram.com/BipartiteGraph.html) that  keeps track of user–tweet interactions over the most recent n hours and reads from Kafka. Each individual GraphJet serever can ingest one million graph edges per second and compute 500 recommendations/second. 
+
+They describe the reasons specifically for creating an in-memory DB in the GraphJet paper: 
+
+<img width="445" alt="Screenshot 2023-04-02 at 12 21 06 PM" src="https://user-images.githubusercontent.com/3837836/229365611-72b263d6-bc7e-4089-8e23-fe8ac68e1d6a.png">
+
+The precursor to GraphJet was WTF, Who to Follow, which focused [only on recommending users to other users.](https://web.stanford.edu/~rezab/papers/wtf_overview.pdf), using [Cassovary, an in-memory graph processing engine](https://github.com/twitter/cassovary) built specifically for WTF, also built on the JVM. 
+
+<img width="447" alt="Screenshot 2023-04-02 at 12 22 15 PM" src="https://user-images.githubusercontent.com/3837836/229365667-96855c3a-6238-4138-bdd7-faf396d8397e.png">
+
+GraphJet implements two random walk algorithms:  
+ + Circle of Trust (internal to Twitter) and 
+ + SALSA (Stochastic Approach for Link-Structure Analysis). 
+
+<img width="423" alt="Screenshot 2023-04-02 at 12 38 16 PM" src="https://user-images.githubusercontent.com/3837836/229366503-3f860693-6dfd-4755-90c4-e67c85964700.png">
+GraphJet Architecture
+
++A large portion of the traffic to GraphJet comes from
+clients who request content recommendations for a partic-
+ular user.
+
+Graphjet includes [CLICK, FAVORITE, RETWEET, REPLY, AND TWEET as input node types](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/scala/com/twitter/recos/graph_common/NodeInfoHandler.scala#L22) and keeps track of left (input) and right(output) nodes. 
+
+### SimClusters
+--- 
 
 
-## Candidate Generators
+### TwHIN
+--- 
+
+### RealGraph
+--- 
+
+
+### TweepCred
+--- 
+
+
+
+At the end of the candidate generation phase, 1500 Tweets are available for serving to your feed. 
 
 + The largest candidate generator is [Earlybird](https://blog.twitter.com/engineering/en_us/a/2011/the-engineering-behind-twitter-s-new-search-experience), a Lucene based real-time retrieval engine. There is an [Earlybird paper.](http://notes.stephenholiday.com/Earlybird.pdf) 
+
+
 
 ## Rankers
 
