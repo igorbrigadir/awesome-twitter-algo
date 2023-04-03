@@ -147,35 +147,77 @@ Graphjet includes [CLICK, FAVORITE, RETWEET, REPLY, AND TWEET as input node type
 
 
 
-At the end of the candidate generation phase, 1500 Tweets are available for serving to your feed. 
-
 + The largest candidate generator is [Earlybird](https://blog.twitter.com/engineering/en_us/a/2011/the-engineering-behind-twitter-s-new-search-experience), a Lucene based real-time retrieval engine. There is an [Earlybird paper.](http://notes.stephenholiday.com/Earlybird.pdf) 
 
 
 
 ## Rankers
 
+Based on the blog, a total of 1500 candidates are retrieved. However, only some of them will be served to your Twitter feed.
+
+Twitter would want to show the tweets that you are most likely to positively engage with. Therefore Twitter will predict probabilities of whether you will engage with the tweet, and use these probabilities to score the tweets.
+
+To reduce computation cost, tweets are first ranked with a light ranker (which is just a logistic regression) and then a heavy ranking (a neural network model).
+
+### Light Ranker
+
+This is their [documentation](https://github.com/twitter/the-algorithm/blob/main/src/python/twitter/deepbird/projects/timelines/scripts/models/earlybird/README.md)
+
+- “The Earlybird light ranker is a which predicts the likelihood that the user will engage with a tweet. It is intended to be a simplified version of the heavy ranker which can run on a greater amount of tweets.”
+- “The current model was last trained several years ago, and uses some very strange features. We are working on training a new model, and eventually rebuilding this part of the stack entirely.”
+
+Twitter has separate models for ranking in-network and out-network tweets, with different features
+- [In-network model](https://github.com/twitter/the-algorithm/blob/main/src/python/twitter/deepbird/projects/timelines/configs/recap_earlybird/feature_config.py)
+- [Out-of-network model](https://github.com/twitter/the-algorithm/blob/main/src/python/twitter/deepbird/projects/timelines/configs/rectweet_earlybird/feature_config.py)
+
+
+Things we would like to find out
+- Since the model is a logistic regression model, what are the weights for each item?
+- How many items will remain after the light ranker?
+
+
+### Heavy Ranker
+
 + **Recap** The "Heavy Ranker" is a [parallel masknet](https://arxiv.org/abs/2102.07619). Majority of the code for this is in the [ML repo](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md). The [ranker itself](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md) is run after the candidate generators. 
 
 [Input features](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/FEATURES.md) 
-
-Outputs are predictions on how user will respond to the tweet: 
-+ probability the user will favorite the Tweet
-+ probability the user will click into the conversation of this tweet and reply or like a Tweet
-+ probability the user will click into the conversation of this Tweet and stay there for at least 2 minutes.
-+probability the user will react negatively (requesting "show less often" on the Tweet or author, block or mute the Tweet author) 
-+ probability the user opens the Tweet author profile and Likes or replies to a Tweet
-+ probability the user replies to the Tweet
-+ probability the user replies to the Tweet and this reply is engaged by the Tweet author 
-+ probability the user will click Report Tweet 
-+ probability the user will ReTweet the Tweet
-+ probability (for a video Tweet) that the user will watch at least half of the video
 
 All of these are combined and weighted into a score. Hyperparameters for the model [and weighting are here.](https://github.com/twitter/the-algorithm-ml/blob/78c3235eee5b4e111ccacb7d48e80eca019e480c/projects/home/recap/config/local_prod.yaml#L1)
 
 For more details on the model, see the [Architecture overview](masknet.md).
 
-+ The Light Ranker
+
+### Scoring Plan
+
+After the model predicts the probability of the actions, weights are assigned to the probability. The tweet with the highest score is likely to appear at the top of your feed.
+
+These are the actions predicted, and [their corresponding weights](https://raw.githubusercontent.com/twitter/the-algorithm-ml/main/projects/home/recap/README.md)
++ probability the user will favorite the Tweet (0.5)
++ probability the user will click into the conversation of this tweet and reply or like a Tweet (11*)
++ probability the user will click into the conversation of this Tweet and stay there for at least 2 minutes (11*)
++ probability the user will react negatively (requesting "show less often" on the Tweet or author, block or mute the Tweet author) (-74)
++ probability the user opens the Tweet author profile and Likes or replies to a Tweet (12)
++ probability the user replies to the Tweet (27)
++ probability the user replies to the Tweet and this reply is engaged by the Tweet author (75)
++ probability the user will click Report Tweet (-369)
++ probability the user will ReTweet the Tweet (1)
++ probability (for a video Tweet) that the user will watch at least half of the video (0.005)
+
+The score of the tweet is equal to
+
+P(favorite) * 0.5 + max( P(click and reply), P(click and stay two minutes) ) * 11 + P(hide or block or mute) * -74 + ... etc
+
+The tweet with the highest score is likely to appear at the top of your feed. (There is still a part on boost where multipliers will be applied to the score).
+
+There are some interpretations we can make from the scoring plan
+
+- They combine the negative feedback actions (hide/mute/block) even though they have different produce consequences. By combining the predictions I think they hope to generalize the signal. However, the report prediction is by itself and has a much larger negative weight.
+- There is very limited implicit action in the scoring plan. This is unlike short video recommendation systems like TikTok where the system learns from how long you stay on the video. The weight for the video completion prediction is insignificant.
+- The only implicit action being predicted is when you click into the conversation of this Tweet and stay there for at least 2 minutes. 2 minutes is quite a large number. This can be viewed as a defense against comment bait, where the author entices you to click on the comments but leave you disappointed. If you exit the comment section soon after clicking, it is not considered a positive signal to engagement.
+- The scoring plan encourages participation in the conversation. The weight for the probability of you replying is high. The weight for the probability of the author replying to your reply is even higher. We can view this as Twitter's intention to be the "town square" of the Internet. However, this signal does not differentiate whether the conversation is friendly or otherwise (unless you also hide/mute/block/report).
+
+The release does not describe how the weights are chosen. We expect the weights to be tuned with A/B testing. We are also curious about what Twitter measures and optimizes when they tune the weights.
+
 
 
 ## Filters
@@ -220,7 +262,7 @@ There are two mentions related to Ukraine in the Twiter Algo repo. Whereas [one 
 
 ## Changes
 
-+ 2 hours after it was released, [Twitter removed](https://github.com/twitter/the-algorithm/commit/ec83d01dcaebf369444d75ed04b3625a0a645eb9) feature flags that specifically higlighted Elon's account
++ 2 hours after it was released, [Twitter removed](https://github.com/twitter/the-algorithm/compare/ef4c5eb65e6e04fac4f0e1fa8bbeff56b75c1f98...ec83d01dcaebf369444d75ed04b3625a0a645eb9) feature flags that specifically higlighted Elon's account
 
 ## Resources for Learning More about Recsys
 
@@ -233,3 +275,9 @@ There are two mentions related to Ukraine in the Twiter Algo repo. Whereas [one 
 + Admittedly out of date, but still useful, is the [RecSys Wiki](https://www.recsyswiki.com/wiki/Main_Page).
 
 + The latest edition of the [Recommender Systems Handbook](https://link.springer.com/book/10.1007/978-1-0716-2197-4) is also a good book that covers the field well.
+
++ There is this Chinese-language [video tutorial series](https://www.youtube.com/playlist?list=PLvOO0btloRntAi-VnV06M1Bu0X1xljUUP) on recommendation systems. The author was previously an assistant professor and now works at Xiaohongshu (Pinterest equivalent in China).
+
++ I find it very helpful to break down recommendation systems into four stages - [retrieval, filtering, scoring, and ordering](https://medium.com/nvidia-merlin/recommender-systems-not-just-recommender-models-485c161c755e).
+
+- Although a [systems design interview guide](http://patrickhalina.com/posts/ml-systems-design-interview-guide/), it introduces the most important design consideration for a recommendation system.
