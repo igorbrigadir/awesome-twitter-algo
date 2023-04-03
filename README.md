@@ -215,6 +215,8 @@ There are some interpretations we can make from the scoring plan
 - There is very limited implicit action in the scoring plan. This is unlike short video recommendation systems like TikTok where the system learns from how long you stay on the video. The weight for the video completion prediction is insignificant.
 - The only implicit action being predicted is when you click into the conversation of this Tweet and stay there for at least 2 minutes. 2 minutes is quite a large number. This can be viewed as a defense against comment bait, where the author entices you to click on the comments but leave you disappointed. If you exit the comment section soon after clicking, it is not considered a positive signal to engagement.
 - The scoring plan encourages participation in the conversation. The weight for the probability of you replying is high. The weight for the probability of the author replying to your reply is even higher. We can view this as Twitter's intention to be the "town square" of the Internet. However, this signal does not differentiate whether the conversation is friendly or otherwise (unless you also hide/mute/block/report).
+- We should also note that the score of Blue Verified authors will be given a multiplier of 4 or 2, which overrides many of the weights in the scoring plan.
+
 
 The release does not describe how the weights are chosen. We expect the weights to be tuned with A/B testing. We are also curious about what Twitter measures and optimizes when they tune the weights.
 
@@ -222,13 +224,54 @@ The release does not describe how the weights are chosen. We expect the weights 
 
 ## Filters
 
-+ Coming into this stage from the light ranker, there are other heuristics that are [used to filter out more tweets after scoring.](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md)
+Usually, filtering happens before ranking to avoid the need to rank candidates that will be filtered later. However, on Twitter, the blog implies that filtering happens after ranking.
+
++ [visibility-filters](https://github.com/twitter/the-algorithm/blob/main/visibilitylib/README.md)
+  + (From the blog) "Filter out Tweets based on their content and your preferences. For instance, remove Tweets from accounts you block or mute."
+  + “Visibility Filtering library is currently being reviewed and rebuilt, and part of the code has been removed and is not ready to be shared yet. The remaining part of the code needs further review and will be shared once it’s ready. Also code comments have been sanitized.”
+
 
 + Remove [out-of-network competitor site URLs](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/filter/OutOfNetworkCompetitorURLFilter.scala) from potential offered candidate Tweets
 
-## Timeline Mixer
 
-+ The timeline mixer has a [ratio where](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/home-mixer/server/src/main/scala/com/twitter/home_mixer/param/HomeGlobalParams.scala#L89) verified blue checkmark tweets are offered twice as more if they're out-of-network and four times as more if they're in-network. 
+## Ordering
+
+There are some reasons why we might not want to order the tweets strictly by the scoring plan. The scoring plan scores tweets independent of other Tweets. However, we might want to consider other tweets when presenting the tweets on the feed, for example, avoid showing tweets from the same author consecutively or maintain some other form of diversity in the tweets.
+
+These are the heuristics mentioned in the [blog](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm)
+
+- **Author Diversity**: Avoid too many consecutive Tweets from a single author.
+  - See [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/product/scored_tweets/scorer/DiversityDiscountProvider.scala)
+  - `score * ((1 - 0.25) * Math.pow(0.5, position) + 0.25)`
+  - If you have seen the author is the same feed refresh, the score of the tweet from the author havled (but with a floor)
+
+- **Content Balance**: Ensure we are delivering a fair balance of In-Network and Out-of-Network Tweets.
+  - (Contributions needed)
+
+- **Feedback-based Fatigue**: Lower the score of certain Tweets if the viewer has provided negative feedback around it.
+  - See [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/scorer/FeedbackFatigueScorer.scala)
+  - The multiplier will be less than one if you
+    - Provided negative feedback on the author of the tweet
+    - Provided negative feedback to the users who like the tweet
+    - Provided negative feedback on users who follow the author of the tweet (?)
+    - Provided negative feedback on users who retweeted the tweet
+  - Recent negative feedback will have a greater weight
+    - If the negative feedback is provided more than 14 + 140 days ago, the negative feedback will not be considered.
+    - If the negative feedback was provided less than 14 days ago, the tweet will be filtered. See [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/filter/FeedbackFatigueFilter.scala)
+
+- **Social Proof**: Exclude Out-of-Network Tweets without a second degree connection to the Tweet as a quality safeguard. In other words, ensure someone you follow engaged with the Tweet or follows the Tweet’s author.
+  - What is described above is a filter, not a discount. However, we can find the discount, see [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/scorer/OONTweetScalingScorer.scala)
+  - `ScaleFactor = 0.75` is applied to out-of-network tweets (exactly second degree connection?), in-network retweets of out-of-network tweets should not have this multiplier applied
+  - We might have a filter that removes all content with more than two degrees of connection.
+
+- **Twitter Blue boost**: (Not listed in blog)
+  - See [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/scorer/VerifiedAuthorScalingScorer.scala) and [default parameters](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/param/HomeGlobalParams.scala#L89)
+    - If the author of the candidate tweet is a Blue Verified and in the network of the user (i.e. user follows author?), the score of the tweet is multiplied by 4
+    - If the author of the candidate tweet is a Blue Verified and out of the network of the user (i.e. does not follow author an within two degrees of connection), the score of the tweet from is multiplied by 2.
+  - This means that Blue Verified authors that the user does not follow is given a greater boost than the authors the user explictly follows.
+  - Note that Twitter Blue is launched shortly after Elon Musk's takeover.
+
+
 
 
 ## Business Terms and Logic
