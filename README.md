@@ -306,6 +306,10 @@ There are two mentions related to Ukraine in the Twiter Algo repo. Whereas [one 
 
 + 2 hours after it was released, [Twitter removed](https://github.com/twitter/the-algorithm/compare/ef4c5eb65e6e04fac4f0e1fa8bbeff56b75c1f98...ec83d01dcaebf369444d75ed04b3625a0a645eb9) feature flags that specifically higlighted Elon's account
 
+## Discussions about The Algorithm Elsewhere
+
++ [What can we learn from `The Algorithm,' Twitter's partial open-sourcing of it's feed-ranking recommendation system?](https://solomonmg.github.io/post/twitter-the-algorithm/)
+
 ## Resources for Learning More about Recsys
 
 + @karlhigley's [blog](https://practicalrecs.com/the-rest-of-the-owl.html) and [thread of threads](https://twitter.com/karlhigley/status/1138122648934916097) are very accessible things about Recommender Systems in practice.
