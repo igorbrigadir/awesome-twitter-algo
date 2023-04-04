@@ -145,10 +145,8 @@ Graphjet includes [CLICK, FAVORITE, RETWEET, REPLY, AND TWEET as input node type
 ### TweepCred
 --- 
 
-
-
+### Earlybird
 + The largest candidate generator is [Earlybird](https://blog.twitter.com/engineering/en_us/a/2011/the-engineering-behind-twitter-s-new-search-experience), a Lucene based real-time retrieval engine. There is an [Earlybird paper.](http://notes.stephenholiday.com/Earlybird.pdf) 
-
 
 
 ## Rankers
@@ -170,11 +168,9 @@ Twitter has separate models for ranking in-network and out-network tweets, with 
 - [In-network model](https://github.com/twitter/the-algorithm/blob/main/src/python/twitter/deepbird/projects/timelines/configs/recap_earlybird/feature_config.py)
 - [Out-of-network model](https://github.com/twitter/the-algorithm/blob/main/src/python/twitter/deepbird/projects/timelines/configs/rectweet_earlybird/feature_config.py)
 
+The model for the Light Ranker TensorFlow model is trained using [TWML](https://github.com/twitter/the-algorithm/blob/main/twml/README.md) which is said to be deprecated, but the code is in [deepbird](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/python/twitter/deepbird/projects/timelines/scripts/models/earlybird/README.md) project.
 
-Things we would like to find out
-- Since the model is a logistic regression model, what are the weights for each item?
-- How many items will remain after the light ranker?
-
+The Earlybird Light Ranker has some [feature weights](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/python/twitter/deepbird/projects/timelines/scripts/models/earlybird/example_weights.py#L6) but as suggested in the code, they are read in as run time parameters and these are most likely different in practice.
 
 ### Heavy Ranker
 
@@ -192,22 +188,27 @@ For more details on the model, see the [Architecture overview](masknet.md).
 After the model predicts the probability of the actions, weights are assigned to the probability. The tweet with the highest score is likely to appear at the top of your feed.
 
 These are the actions predicted, and [their corresponding weights](https://raw.githubusercontent.com/twitter/the-algorithm-ml/main/projects/home/recap/README.md)
-+ probability the user will favorite the Tweet (0.5)
-+ probability the user will click into the conversation of this tweet and reply or like a Tweet (11*)
-+ probability the user will click into the conversation of this Tweet and stay there for at least 2 minutes (11*)
-+ probability the user will react negatively (requesting "show less often" on the Tweet or author, block or mute the Tweet author) (-74)
-+ probability the user opens the Tweet author profile and Likes or replies to a Tweet (12)
-+ probability the user replies to the Tweet (27)
-+ probability the user replies to the Tweet and this reply is engaged by the Tweet author (75)
-+ probability the user will click Report Tweet (-369)
-+ probability the user will ReTweet the Tweet (1)
-+ probability (for a video Tweet) that the user will watch at least half of the video (0.005)
+
+| feature                                                                          | weight |
+|----------------------------------------------------------------------------------|--------|
+|probability the user will favorite the Tweet |(0.5)|
+|probability the user will click into the conversation of this tweet and reply or like a Tweet |(11*)|
+|probability the user will click into the conversation of this Tweet and stay there for at least 2 minutes |(11*)|
+|probability the user will react negatively (requesting "show less often" on the Tweet or author, block or mute the Tweet author) |(-74)|
+|probability the user opens the Tweet author profile and Likes or replies to a Tweet |(12)|
+|probability the user replies to the Tweet |(27)|
+|probability the user replies to the Tweet and this reply is engaged by the Tweet author |(75)|
+|probability the user will click Report Tweet |(-369)|
+|probability the user will ReTweet the Tweet |(1)|
+|probability (for a video Tweet) that the user will watch at least half of the video |(0.005)|
 
 The score of the tweet is equal to
 
+```
 P(favorite) * 0.5 + max( P(click and reply), P(click and stay two minutes) ) * 11 + P(hide or block or mute) * -74 + ... etc
+```
 
-The tweet with the highest score is likely to appear at the top of your feed. (There is still a part on boost where multipliers will be applied to the score).
+The tweet with the highest score is likely to appear at the top of your feed. (There is still a part on boost where multipliers will be applied to the score). However, filtering is applied afterwards, and this could change what tweets you actually see.
 
 There are some interpretations we can make from the scoring plan
 
@@ -215,12 +216,9 @@ There are some interpretations we can make from the scoring plan
 - There is very limited implicit action in the scoring plan. This is unlike short video recommendation systems like TikTok where the system learns from how long you stay on the video. The weight for the video completion prediction is insignificant.
 - The only implicit action being predicted is when you click into the conversation of this Tweet and stay there for at least 2 minutes. 2 minutes is quite a large number. This can be viewed as a defense against comment bait, where the author entices you to click on the comments but leave you disappointed. If you exit the comment section soon after clicking, it is not considered a positive signal to engagement.
 - The scoring plan encourages participation in the conversation. The weight for the probability of you replying is high. The weight for the probability of the author replying to your reply is even higher. We can view this as Twitter's intention to be the "town square" of the Internet. However, this signal does not differentiate whether the conversation is friendly or otherwise (unless you also hide/mute/block/report).
-- We should also note that the score of Blue Verified authors will be given a multiplier of 4 or 2, which overrides many of the weights in the scoring plan.
-
+- We should also note that the score of Blue Verified authors will be given a [multiplier of 4 or 2](https://github.com/twitter/the-algorithm/blob/d1cab28a1044a147a107ae067890850041956777/home-mixer/server/src/main/scala/com/twitter/home_mixer/param/HomeGlobalParams.scala#L89,L103), which overrides many of the weights in the scoring plan.
 
 The release does not describe how the weights are chosen. We expect the weights to be tuned with A/B testing. We are also curious about what Twitter measures and optimizes when they tune the weights.
-
-
 
 ## Filters
 
@@ -229,7 +227,6 @@ Usually, filtering happens before ranking to avoid the need to rank candidates t
 + [visibility-filters](https://github.com/twitter/the-algorithm/blob/main/visibilitylib/README.md)
   + (From the blog) "Filter out Tweets based on their content and your preferences. For instance, remove Tweets from accounts you block or mute."
   + “Visibility Filtering library is currently being reviewed and rebuilt, and part of the code has been removed and is not ready to be shared yet. The remaining part of the code needs further review and will be shared once it’s ready. Also code comments have been sanitized.”
-
 
 + Remove [out-of-network competitor site URLs](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/filter/OutOfNetworkCompetitorURLFilter.scala) from potential offered candidate Tweets
 
@@ -318,8 +315,6 @@ There are two mentions related to Ukraine in the Twiter Algo repo. Whereas [one 
 + Admittedly out of date, but still useful, is the [RecSys Wiki](https://www.recsyswiki.com/wiki/Main_Page).
 
 + The latest edition of the [Recommender Systems Handbook](https://link.springer.com/book/10.1007/978-1-0716-2197-4) is also a good book that covers the field well.
-
-+ There is this Chinese-language [video tutorial series](https://www.youtube.com/playlist?list=PLvOO0btloRntAi-VnV06M1Bu0X1xljUUP) on recommendation systems. The author was previously an assistant professor and now works at Xiaohongshu (Pinterest equivalent in China).
 
 + I find it very helpful to break down recommendation systems into four stages - [retrieval, filtering, scoring, and ordering](https://medium.com/nvidia-merlin/recommender-systems-not-just-recommender-models-485c161c755e).
 
