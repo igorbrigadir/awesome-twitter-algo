@@ -127,14 +127,46 @@ GraphJet implements two random walk algorithms:
 <img width="423" alt="Screenshot 2023-04-02 at 12 38 16 PM" src="https://user-images.githubusercontent.com/3837836/229366503-3f860693-6dfd-4755-90c4-e67c85964700.png">
 GraphJet Architecture
 
-+A large portion of the traffic to GraphJet comes from
++ A large portion of the traffic to GraphJet comes from
 clients who request content recommendations for a partic-
 ular user.
 
-Graphjet includes [CLICK, FAVORITE, RETWEET, REPLY, AND TWEET as input node types](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/scala/com/twitter/recos/graph_common/NodeInfoHandler.scala#L22) and keeps track of left (input) and right(output) nodes. 
+GraphJet includes [CLICK, FAVORITE, RETWEET, REPLY, AND TWEET as input node types](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/scala/com/twitter/recos/graph_common/NodeInfoHandler.scala#L22) and keeps track of left (input) and right(output) nodes. 
 
 ### SimClusters
 --- 
+
+[Simclusters](https://github.com/twitter/the-algorithm/tree/main/simclusters-ann) is another recommended tweet candidate generation source that, given an embedding (or a model-learned vector representation of a string of text, in this case a tweet), will return a group of candidate tweets that are similar to the input tweet via ANN lookup using cosine similarity as a metric. 
+
+Simclusters are [built using this algorithm](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/simclusters_v2/README.md) and served using the [ANN service](https://github.com/twitter/the-algorithm/tree/main/simclusters-ann). 
+
+## SimClusters Embeddings Algorithm
+[See Paper here](https://dl.acm.org/doi/10.1145/3394486.3403370)
+
+There is a multitude of content that can be recommended on Twitter: Tweets, user recommendations, events, hashtags, and Who to Follow, the service discussed in the GraphJet and [Who to Follow papers](https://web.stanford.edu/~rezab/papers/wtf_overview.pdf). 
+
+Each of these recommendations need to be relearned frequently since Twitter as a platform moves quickly, and they need to be presented in a variety of places: not only in the feed, but also via email or notifications, or the "Trends and Events" section. 
+
+<img width="463" alt="Screenshot 2023-04-04 at 6 36 16 AM" src="https://user-images.githubusercontent.com/3837836/229766337-7b2a06cf-f38d-4c5d-b9b3-6f6221bc8d4f.png">
+
+GraphJet can generate a bipartite graph for recommendations at real time, but does not generalize to new domain areas. 
+
+We can generalize all of these representations and learn them all from a single service, which was the idea behind SimClusters. 
+
+In SimClusters, we consturct a user-user cluster graph based on community structures (i.e. K-Pop or machine learning) where the central figures in the community are "influencers", and content is recommended on a  per-community level. The algorithm for community detection is based on [Metropolis-Hastings](https://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm), computed offline on MapReduce jobs in Hadoop 
+
+**Stage 1:** Looking at the user-user graph and creating a list of communities that users belong to - "User Interest Representations" 
+
+**Stage 2:**  Calculates the representations for a given target, given a user-user bipartite graph
+
+<img width="487" alt="Screenshot 2023-04-04 at 6 44 52 AM" src="https://user-images.githubusercontent.com/3837836/229768416-a3098145-d483-4eec-b574-70eaaf728f90.png">
+
+
+
+
+## Simclusters Engineering Implementation
+
+Embeddings are generated and can ge extended to work in batch-distributed, batch-multicore, or streaming-distributed modes. 
 
 
 ### TwHIN
