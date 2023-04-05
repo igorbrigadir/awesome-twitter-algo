@@ -309,6 +309,7 @@ There are two mentions related to Ukraine in the Twiter Algo repo. Whereas [one 
 ## Discussions about The Algorithm Elsewhere
 
 + [What can we learn from `The Algorithm,' Twitter's partial open-sourcing of it's feed-ranking recommendation system?](https://solomonmg.github.io/post/twitter-the-algorithm/)
++ A CVE (Common Vulnerabilities and Exposures) [CVE-2023-29218](https://nvd.nist.gov/vuln/detail/CVE-2023-29218) was drafted for a potential denial of service attack using coordinated mass blocking, muting and unfollowing, citing the code release (but the attack itself was described, discussed, and widely speculated on previously).
 
 ## Resources for Learning More about Recsys
 
