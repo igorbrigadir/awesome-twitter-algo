@@ -191,7 +191,9 @@ At the end of the candidate generation phase, 1500 Tweets are available for serv
 
 + **Recap** The "Heavy Ranker" is a [parallel masknet](https://arxiv.org/abs/2102.07619). Majority of the code for this is in the [ML repo](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md). The [ranker itself](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md) is run after the candidate generators. 
 
-[Input features](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/FEATURES.md) 
+It's important to note that [there are no content-based embeddings](https://twitter.com/YingXiao/status/1643398843562856450) inside the main ranking algorithm
+
+[Input features](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/FEATURES.md). All the specific features within the input feature list are based slightly on content signals and mostly social signals, such as "aggregate counts of user interaction with other engagers of tweets that the user interacts with", and based heavily on "likes" and "replies" as input actions, but at an aggregate level. The social and embeddings-based features in the dataset are not used and weighted as much. 
 
 Outputs are predictions on how user will respond to the tweet: 
 + probability the user will favorite the Tweet
