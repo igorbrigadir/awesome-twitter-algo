@@ -179,15 +179,34 @@ Embeddings are generated and can ge extended to work in batch-distributed, batch
 ### TweepCred
 --- 
 
-
-
-At the end of the candidate generation phase, 1500 Tweets are available for serving to your feed. 
-
+### Earlybird
 + The largest candidate generator is [Earlybird](https://blog.twitter.com/engineering/en_us/a/2011/the-engineering-behind-twitter-s-new-search-experience), a Lucene based real-time retrieval engine. There is an [Earlybird paper.](http://notes.stephenholiday.com/Earlybird.pdf) 
 
 
-
 ## Rankers
+
+Based on the blog, a total of 1500 candidates are retrieved. However, only some of them will be served to your Twitter feed.
+
+Twitter would want to show the tweets that you are most likely to positively engage with. Therefore Twitter will predict probabilities of whether you will engage with the tweet, and use these probabilities to score the tweets.
+
+To reduce computation cost, tweets are first ranked with a light ranker (which is just a logistic regression) and then a heavy ranking (a neural network model).
+
+### Light Ranker
+
+This is their [documentation](https://github.com/twitter/the-algorithm/blob/main/src/python/twitter/deepbird/projects/timelines/scripts/models/earlybird/README.md)
+
+- “The Earlybird light ranker is a which predicts the likelihood that the user will engage with a tweet. It is intended to be a simplified version of the heavy ranker which can run on a greater amount of tweets.”
+- “The current model was last trained several years ago, and uses some very strange features. We are working on training a new model, and eventually rebuilding this part of the stack entirely.”
+
+Twitter has separate models for ranking in-network and out-network tweets, with different features
+- [In-network model](https://github.com/twitter/the-algorithm/blob/main/src/python/twitter/deepbird/projects/timelines/configs/recap_earlybird/feature_config.py)
+- [Out-of-network model](https://github.com/twitter/the-algorithm/blob/main/src/python/twitter/deepbird/projects/timelines/configs/rectweet_earlybird/feature_config.py)
+
+The model for the Light Ranker TensorFlow model is trained using [TWML](https://github.com/twitter/the-algorithm/blob/main/twml/README.md) which is said to be deprecated, but the code is in [deepbird](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/python/twitter/deepbird/projects/timelines/scripts/models/earlybird/README.md) project.
+
+The Earlybird Light Ranker has some [feature weights](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/python/twitter/deepbird/projects/timelines/scripts/models/earlybird/example_weights.py#L6) but as suggested in the code, they are read in as run time parameters and these are most likely different in practice.
+
+### Heavy Ranker
 
 + **Recap** The "Heavy Ranker" is a [parallel masknet](https://arxiv.org/abs/2102.07619). Majority of the code for this is in the [ML repo](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md). The [ranker itself](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md) is run after the candidate generators. 
 
@@ -195,34 +214,97 @@ It's important to note that [there are no content-based embeddings](https://twit
 
 [Input features](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/FEATURES.md). All the specific features within the input feature list are based slightly on content signals and mostly social signals, such as "aggregate counts of user interaction with other engagers of tweets that the user interacts with", and based heavily on "likes" and "replies" as input actions, but at an aggregate level. The social and embeddings-based features in the dataset are not used and weighted as much. 
 
-Outputs are predictions on how user will respond to the tweet: 
-+ probability the user will favorite the Tweet
-+ probability the user will click into the conversation of this tweet and reply or like a Tweet
-+ probability the user will click into the conversation of this Tweet and stay there for at least 2 minutes.
-+probability the user will react negatively (requesting "show less often" on the Tweet or author, block or mute the Tweet author) 
-+ probability the user opens the Tweet author profile and Likes or replies to a Tweet
-+ probability the user replies to the Tweet
-+ probability the user replies to the Tweet and this reply is engaged by the Tweet author 
-+ probability the user will click Report Tweet 
-+ probability the user will ReTweet the Tweet
-+ probability (for a video Tweet) that the user will watch at least half of the video
-
 All of these are combined and weighted into a score. Hyperparameters for the model [and weighting are here.](https://github.com/twitter/the-algorithm-ml/blob/78c3235eee5b4e111ccacb7d48e80eca019e480c/projects/home/recap/config/local_prod.yaml#L1)
 
 For more details on the model, see the [Architecture overview](masknet.md).
 
-+ The Light Ranker
 
+### Scoring Plan
+
+After the model predicts the probability of the actions, weights are assigned to the probability. The tweet with the highest score is likely to appear at the top of your feed.
+
+These are the actions predicted, and [their corresponding weights](https://raw.githubusercontent.com/twitter/the-algorithm-ml/main/projects/home/recap/README.md)
+
+| feature                                                                          | weight |
+|----------------------------------------------------------------------------------|--------|
+|probability the user will favorite the Tweet |(0.5)|
+|probability the user will click into the conversation of this tweet and reply or like a Tweet |(11*)|
+|probability the user will click into the conversation of this Tweet and stay there for at least 2 minutes |(11*)|
+|probability the user will react negatively (requesting "show less often" on the Tweet or author, block or mute the Tweet author) |(-74)|
+|probability the user opens the Tweet author profile and Likes or replies to a Tweet |(12)|
+|probability the user replies to the Tweet |(27)|
+|probability the user replies to the Tweet and this reply is engaged by the Tweet author |(75)|
+|probability the user will click Report Tweet |(-369)|
+|probability the user will ReTweet the Tweet |(1)|
+|probability (for a video Tweet) that the user will watch at least half of the video |(0.005)|
+
+The score of the tweet is equal to
+
+```
+P(favorite) * 0.5 + max( P(click and reply), P(click and stay two minutes) ) * 11 + P(hide or block or mute) * -74 + ... etc
+```
+
+The tweet with the highest score is likely to appear at the top of your feed. (There is still a part on boost where multipliers will be applied to the score). However, filtering is applied afterwards, and this could change what tweets you actually see.
+
+There are some interpretations we can make from the scoring plan
+
+- They combine the negative feedback actions (hide/mute/block) even though they have different produce consequences. By combining the predictions I think they hope to generalize the signal. However, the report prediction is by itself and has a much larger negative weight.
+- There is very limited implicit action in the scoring plan. This is unlike short video recommendation systems like TikTok where the system learns from how long you stay on the video. The weight for the video completion prediction is insignificant.
+- The only implicit action being predicted is when you click into the conversation of this Tweet and stay there for at least 2 minutes. 2 minutes is quite a large number. This can be viewed as a defense against comment bait, where the author entices you to click on the comments but leave you disappointed. If you exit the comment section soon after clicking, it is not considered a positive signal to engagement.
+- The scoring plan encourages participation in the conversation. The weight for the probability of you replying is high. The weight for the probability of the author replying to your reply is even higher. We can view this as Twitter's intention to be the "town square" of the Internet. However, this signal does not differentiate whether the conversation is friendly or otherwise (unless you also hide/mute/block/report).
+- We should also note that the score of Blue Verified authors will be given a [multiplier of 4 or 2](https://github.com/twitter/the-algorithm/blob/d1cab28a1044a147a107ae067890850041956777/home-mixer/server/src/main/scala/com/twitter/home_mixer/param/HomeGlobalParams.scala#L89,L103), which overrides many of the weights in the scoring plan.
+
+The release does not describe how the weights are chosen. We expect the weights to be tuned with A/B testing. We are also curious about what Twitter measures and optimizes when they tune the weights.
 
 ## Filters
 
-+ Coming into this stage from the light ranker, there are other heuristics that are [used to filter out more tweets after scoring.](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md)
+Usually, filtering happens before ranking to avoid the need to rank candidates that will be filtered later. However, on Twitter, the blog implies that filtering happens after ranking.
+
++ [visibility-filters](https://github.com/twitter/the-algorithm/blob/main/visibilitylib/README.md)
+  + (From the blog) "Filter out Tweets based on their content and your preferences. For instance, remove Tweets from accounts you block or mute."
+  + “Visibility Filtering library is currently being reviewed and rebuilt, and part of the code has been removed and is not ready to be shared yet. The remaining part of the code needs further review and will be shared once it’s ready. Also code comments have been sanitized.”
 
 + Remove [out-of-network competitor site URLs](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/filter/OutOfNetworkCompetitorURLFilter.scala) from potential offered candidate Tweets
 
-## Timeline Mixer
 
-+ The timeline mixer has a [ratio where](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/home-mixer/server/src/main/scala/com/twitter/home_mixer/param/HomeGlobalParams.scala#L89) verified blue checkmark tweets are offered twice as more if they're out-of-network and four times as more if they're in-network. 
+## Ordering
+
+There are some reasons why we might not want to order the tweets strictly by the scoring plan. The scoring plan scores tweets independent of other Tweets. However, we might want to consider other tweets when presenting the tweets on the feed, for example, avoid showing tweets from the same author consecutively or maintain some other form of diversity in the tweets.
+
+These are the heuristics mentioned in the [blog](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm)
+
+- **Author Diversity**: Avoid too many consecutive Tweets from a single author.
+  - See [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/product/scored_tweets/scorer/DiversityDiscountProvider.scala)
+  - `score * ((1 - 0.25) * Math.pow(0.5, position) + 0.25)`
+  - If you have seen the author is the same feed refresh, the score of the tweet from the author havled (but with a floor)
+
+- **Content Balance**: Ensure we are delivering a fair balance of In-Network and Out-of-Network Tweets.
+  - (Contributions needed)
+
+- **Feedback-based Fatigue**: Lower the score of certain Tweets if the viewer has provided negative feedback around it.
+  - See [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/scorer/FeedbackFatigueScorer.scala)
+  - The multiplier will be less than one if you
+    - Provided negative feedback on the author of the tweet
+    - Provided negative feedback to the users who like the tweet
+    - Provided negative feedback on users who follow the author of the tweet (?)
+    - Provided negative feedback on users who retweeted the tweet
+  - Recent negative feedback will have a greater weight
+    - If the negative feedback is provided more than 14 + 140 days ago, the negative feedback will not be considered.
+    - If the negative feedback was provided less than 14 days ago, the tweet will be filtered. See [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/filter/FeedbackFatigueFilter.scala)
+
+- **Social Proof**: Exclude Out-of-Network Tweets without a second degree connection to the Tweet as a quality safeguard. In other words, ensure someone you follow engaged with the Tweet or follows the Tweet’s author.
+  - What is described above is a filter, not a discount. However, we can find the discount, see [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/scorer/OONTweetScalingScorer.scala)
+  - `ScaleFactor = 0.75` is applied to out-of-network tweets (exactly second degree connection?), in-network retweets of out-of-network tweets should not have this multiplier applied
+  - We might have a filter that removes all content with more than two degrees of connection.
+
+- **Twitter Blue boost**: (Not listed in blog)
+  - See [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/scorer/VerifiedAuthorScalingScorer.scala) and [default parameters](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/param/HomeGlobalParams.scala#L89)
+    - If the author of the candidate tweet is a Blue Verified and in the network of the user (i.e. user follows author?), the score of the tweet is multiplied by 4
+    - If the author of the candidate tweet is a Blue Verified and out of the network of the user (i.e. does not follow author an within two degrees of connection), the score of the tweet from is multiplied by 2.
+  - This means that Blue Verified authors that the user does not follow is given a greater boost than the authors the user explictly follows.
+  - Note that Twitter Blue is launched shortly after Elon Musk's takeover.
+
+
 
 
 ## Business Terms and Logic
@@ -256,7 +338,12 @@ There are two mentions related to Ukraine in the Twiter Algo repo. Whereas [one 
 
 ## Changes
 
-+ 2 hours after it was released, [Twitter removed](https://github.com/twitter/the-algorithm/commit/ec83d01dcaebf369444d75ed04b3625a0a645eb9) feature flags that specifically higlighted Elon's account
++ 2 hours after it was released, [Twitter removed](https://github.com/twitter/the-algorithm/compare/ef4c5eb65e6e04fac4f0e1fa8bbeff56b75c1f98...ec83d01dcaebf369444d75ed04b3625a0a645eb9) feature flags that specifically higlighted Elon's account
+
+## Discussions about The Algorithm Elsewhere
+
++ [What can we learn from `The Algorithm,' Twitter's partial open-sourcing of it's feed-ranking recommendation system?](https://solomonmg.github.io/post/twitter-the-algorithm/)
++ A CVE (Common Vulnerabilities and Exposures) [CVE-2023-29218](https://nvd.nist.gov/vuln/detail/CVE-2023-29218) was drafted for a potential denial of service attack using coordinated mass blocking, muting and unfollowing, citing the code release (but the attack itself was described, discussed, and widely speculated on previously).
 
 ## Resources for Learning More about Recsys
 
@@ -269,3 +356,7 @@ There are two mentions related to Ukraine in the Twiter Algo repo. Whereas [one 
 + Admittedly out of date, but still useful, is the [RecSys Wiki](https://www.recsyswiki.com/wiki/Main_Page).
 
 + The latest edition of the [Recommender Systems Handbook](https://link.springer.com/book/10.1007/978-1-0716-2197-4) is also a good book that covers the field well.
+
++ I find it very helpful to break down recommendation systems into four stages - [retrieval, filtering, scoring, and ordering](https://medium.com/nvidia-merlin/recommender-systems-not-just-recommender-models-485c161c755e).
+
+- Although a [systems design interview guide](http://patrickhalina.com/posts/ml-systems-design-interview-guide/), it introduces the most important design consideration for a recommendation system.
