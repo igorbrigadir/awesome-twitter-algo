@@ -70,6 +70,8 @@ As context, Twitter initially ran all workloads on-prem but has been [moving to 
 
 + [Finagle](https://twitter.github.io/finagle/) is a service written in Scala with Java and Scala APIs used to manage RPCs
 + Snowflake is [a service that generates unique identifiers](https://blog.twitter.com/engineering/en_us/a/2010/announcing-snowflake) for each tweet based on timestamp, worker number, and sequence number
++ [Heron](https://blog.twitter.com/engineering/en_us/topics/open-source/2018/heron-donated-to-apache-software-foundation) - A realtime streaming analytics library (similar to Flink) 
++ [Strato](https://www.youtube.com/watch?v=E1gDNHZr1NA) - a virtual database powered by microservices 
 
 # Recsys
 
@@ -136,37 +138,56 @@ GraphJet includes [CLICK, FAVORITE, RETWEET, REPLY, AND TWEET as input node type
 ### SimClusters
 --- 
 
-[Simclusters](https://github.com/twitter/the-algorithm/tree/main/simclusters-ann) is another recommended tweet candidate generation source that, given an embedding (or a model-learned vector representation of a string of text, in this case a tweet), will return a group of candidate tweets that are similar to the input tweet via ANN lookup using cosine similarity as a metric. 
+[SimClusters](https://github.com/twitter/the-algorithm/tree/main/simclusters-ann) is another recommended tweet candidate generation source that, given an embedding (or a model-learned vector representation of an entity, in this case a tweet, event, or topic), will return a group of candidate tweets (or events, or topics) that are similar to the input content via [approximate nearest neighbors](https://en.wikipedia.org/wiki/Nearest_neighbor_search#Approximate_nearest_neighbor) lookup using [approximate cosine similarity as a distance metric](https://github.com/twitter/the-algorithm/blob/main/simclusters-ann/README.md#simclusters-approximate-cosine-similarity-core-algorithm). 
 
-Simclusters are [built using this algorithm](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/simclusters_v2/README.md) and served using the [ANN service](https://github.com/twitter/the-algorithm/tree/main/simclusters-ann). 
+SimClusters are [built using this algorithm](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/simclusters_v2/README.md) and served using the [ANN service](https://github.com/twitter/the-algorithm/tree/main/simclusters-ann).
+
+
 
 ## SimClusters Embeddings Algorithm
 [See Paper here](https://dl.acm.org/doi/10.1145/3394486.3403370)
 
 There is a multitude of content that can be recommended on Twitter: Tweets, user recommendations, events, hashtags, and Who to Follow, the service discussed in the GraphJet and [Who to Follow papers](https://web.stanford.edu/~rezab/papers/wtf_overview.pdf). 
 
-Each of these recommendations need to be relearned frequently since Twitter as a platform moves quickly, and they need to be presented in a variety of places: not only in the feed, but also via email or notifications, or the "Trends and Events" section. 
+Each of these recommendation algorithms need to be relearned frequently since content on Twitter moves quickly, and they need to be presented in a variety of places: not only in the feed, but also via email or notifications, or the "Trends and Events" section. 
+
+However, the speed of change for different features is different: for example user recommendations change much more slowly than topic and tweet recommendations. Tweet embeddings are critical for tweet recommendation tasks. We can calculate [tweet similarity and recommend similar tweets to users based on their tweet engagement history.](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/simclusters_v2/summingbird/README.md)
 
 <img width="463" alt="Screenshot 2023-04-04 at 6 36 16 AM" src="https://user-images.githubusercontent.com/3837836/229766337-7b2a06cf-f38d-4c5d-b9b3-6f6221bc8d4f.png">
 
-GraphJet can generate a bipartite graph for recommendations at real time, but does not generalize to new domain areas. 
+Previous iterations of homogenous recommendations for specific domains included WTF and GraphJet, but each hard their limitations. For example, GraphJet can generate a bipartite graph for recommendations at real time, but does not generalize to new domain areas. 
 
 We can generalize all of these representations and learn them all from a single service, which was the idea behind SimClusters. 
 
-In SimClusters, we consturct a user-user cluster graph based on community structures (i.e. K-Pop or machine learning) where the central figures in the community are "influencers", and content is recommended on a  per-community level. The algorithm for community detection is based on [Metropolis-Hastings](https://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm), computed offline on MapReduce jobs in Hadoop 
+In SimClusters, we don't use traditional recsys methods (i.e. matrix factorization) because it's computationally expensive in this case. Instead, we base it on ANN and construct a user-user cluster graph based on community structures (i.e. K-Pop or machine learning) where the central figures in the community are "influencers", and content is recommended on a  per-community level. 
 
-**Stage 1:** Looking at the user-user graph and creating a list of communities that users belong to - "User Interest Representations" 
+The algorithm for community detection is based on [Metropolis-Hastings](https://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm), computed offline on MapReduce jobs in Hadoop. 
 
-**Stage 2:**  Calculates the representations for a given target, given a user-user bipartite graph
+It can compute clusters for 1 bil users (note that Twitter has [450 million MAU -monthly active users](https://www.demandsage.com/twitter-statistics/), which means that the clusters are computed on all potential users? ) and 100k dimensions, with each dimension representing a specific community, which allows it to represent [long-tail content fairly well.](https://arxiv.org/abs/2110.04596) 
+
+## Simclusters Engineering Implementation
+First, we ingest input data that includes tweets, topics, etc. It's unclear where this data comes from. 
+
+**Stage 1:** Looking at the user-user graph and creating a list of communities that users belong to - "User Interest Representations" This is run as an MR job in Hadoop. 
+
+**Stage 2:**  Calculates the representations for a given target, given a user-user bipartite graph, running in parallel. 
 
 <img width="487" alt="Screenshot 2023-04-04 at 6 44 52 AM" src="https://user-images.githubusercontent.com/3837836/229768416-a3098145-d483-4eec-b574-70eaaf728f90.png">
 
+Both of these stages can be run independently. 
 
+Embeddings are generated and can be extended to work in batch-distributed, batch-multicore, or streaming-distributed modes. 
 
+They are then used downstream and blended with sources in the [CR mixer.](https://github.com/twitter/the-algorithm/tree/main/cr-mixer) 
 
-## Simclusters Engineering Implementation
+There is also a realtime component, [SimClusters ANN](https://github.com/twitter/the-algorithm/blob/main/simclusters-ann/README.md), which can return similar content based on the SimClusters output embedding. A [Heron](https://blog.twitter.com/engineering/en_us/topics/open-source/2018/heron-donated-to-apache-software-foundation) job builds the mapping between SimClusters and Tweets. The job saves top 400 Tweets for a SimClusters and top 100 SimClusters for a Tweet.
 
-Embeddings are generated and can ge extended to work in batch-distributed, batch-multicore, or streaming-distributed modes. 
+### Filters
+
+If a user [opted out of](https://github.com/twitter/the-algorithm/blob/138bb519975407d4ea0dc1478d897d451ef05dab/src/scala/com/twitter/simclusters_v2/scalding/optout/SimClustersOptOutUtil.scala#L22) an interest group or category, they're ignored from the SimClusters index. 
+
+### Hypothetical Architecture Diagram
+<img width="487" alt="Simclusters" src="https://user-images.githubusercontent.com/3837836/230660246-6ce676c5-204d-47fa-9909-013565bec142.png">
 
 
 ### TwHIN
@@ -182,10 +203,15 @@ Embeddings are generated and can ge extended to work in batch-distributed, batch
 ### Earlybird
 + The largest candidate generator is [Earlybird](https://blog.twitter.com/engineering/en_us/a/2011/the-engineering-behind-twitter-s-new-search-experience), a Lucene based real-time retrieval engine. There is an [Earlybird paper.](http://notes.stephenholiday.com/Earlybird.pdf) 
 
+## Mixers
+
+Before candidate tweets are sent to be ranked in the light and heavy rankers before being presented to the user, they are combined from their various candidate generation sources within several entites, one being the [CR Mixer,](https://github.com/twitter/the-algorithm/blob/main/cr-mixer/README.md) which fetches out-of-network recommended candidate tweets.
+
+### CR Mixer
 
 ## Rankers
 
-Based on the blog, a total of 1500 candidates are retrieved. However, only some of them will be served to your Twitter feed.
+Based on the Twitter engineering blog post, a total of 1500 candidates are retrieved. However, only some of them will be served to your Twitter feed.
 
 Twitter would want to show the tweets that you are most likely to positively engage with. Therefore Twitter will predict probabilities of whether you will engage with the tweet, and use these probabilities to score the tweets.
 
@@ -210,7 +236,7 @@ The Earlybird Light Ranker has some [feature weights](https://github.com/twitter
 
 + **Recap** The "Heavy Ranker" is a [parallel masknet](https://arxiv.org/abs/2102.07619). Majority of the code for this is in the [ML repo](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md). The [ranker itself](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/README.md) is run after the candidate generators. 
 
-It's important to note that [there are no content-based embeddings](https://twitter.com/YingXiao/status/1643398843562856450) inside the main ranking algorithm
+It's important to note that [there are no content-based embeddings](https://twitter.com/YingXiao/status/1643398843562856450) inside the main ranking algorithm.
 
 [Input features](https://github.com/twitter/the-algorithm-ml/blob/main/projects/home/recap/FEATURES.md). All the specific features within the input feature list are based slightly on content signals and mostly social signals, such as "aggregate counts of user interaction with other engagers of tweets that the user interacts with", and based heavily on "likes" and "replies" as input actions, but at an aggregate level. The social and embeddings-based features in the dataset are not used and weighted as much. 
 
