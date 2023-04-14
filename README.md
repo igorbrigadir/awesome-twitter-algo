@@ -25,7 +25,7 @@ An important high-level concept discussed in the Spaces releasing this code was 
 
 # Code Links
 
-What was released? The majority of the code and algorithms, but not the data or parameters or configurations or build tools of the Recommneder Systems behind "For You" timeline recommendations. The Candidate Retrieval code was also not released, and neither was the Trust and Safety components, and the Ads components - those remain closed off. No User Data or credentials were inside the repositories and code comments were sanitized (or at least, none were obviously there on first look).
+What was released? The majority of the code and algorithms, but not the data or parameters or configurations or build tools of the Recommender Systems behind "For You" timeline recommendations. The Candidate Retrieval code was also not released, and neither was the Trust and Safety components, and the Ads components - those remain closed off. No User Data or credentials were inside the repositories and code comments were sanitized (or at least, none were obviously there on first look).
 
 [Twitter Algo Repo](https://github.com/twitter/the-algorithm) || [Twitter ML Algo Repo](https://github.com/twitter/the-algorithm-ml) || [Blog Post](https://blog.twitter.com/engineering/en_us/topics/open-source/2023/twitter-recommendation-algorithm)
 
@@ -40,7 +40,7 @@ What was released? The majority of the code and algorithms, but not the data or 
 
 There is a very, very old post from 2013 on [High Scalability](http://highscalability.com/blog/2013/7/8/the-architecture-twitter-uses-to-deal-with-150m-active-users.html) which gives some context to how these systems were initially constructed. 
 
-As context, Twitter initially ran all workloads on-prem but has been [moving to Google Cloud.](https://cloud.google.com/blog/products/data-analytics/how-twitter-modernized-its-data-processing-with-google-cloud). In 2019, Twitter began by migrating to BigQuery and DataFlow from a data and analytics perspective. Before the move to BigQuery, [much of the data was stored in HDFS using Thrift](https://blog.twitter.com/engineering/en_us/topics/infrastructure/2022/scaling-data-access-by-moving-an-exabyte-of-data-to-google-cloud). It currently lives in BigQuery and is processed for many of the pipelines described below using [DataFlow](https://cloud.google.com/dataflow), GCP's Spark/Scalding-processing equivaent platform.  
+As context, Twitter initially ran all workloads on-prem but has been [moving to Google Cloud.](https://cloud.google.com/blog/products/data-analytics/how-twitter-modernized-its-data-processing-with-google-cloud). In 2019, Twitter began by migrating to BigQuery and DataFlow from a data and analytics perspective. Before the move to BigQuery, [much of the data was stored in HDFS using Thrift](https://blog.twitter.com/engineering/en_us/topics/infrastructure/2022/scaling-data-access-by-moving-an-exabyte-of-data-to-google-cloud). It currently lives in BigQuery and is processed for many of the pipelines described below using [DataFlow](https://cloud.google.com/dataflow), GCP's Spark/Scalding-processing equivalent platform.  
 
  # Programming Languages and Frameworks
  
@@ -110,7 +110,7 @@ That data is then made available to the candidate generation phase. There is not
 
 ### GraphJet
 --- 
-+ [GraphJet](https://github.com/twitter/GraphJet) - A realtime Java graph processing library that allows for in-memory processing on a single server and focuses on providing content recommendations. [Paper here.](http://www.vldb.org/pvldb/vol9/p1281-sharma.pdf) Recommendations are provided based on shared interests, correlated activities, and a number of other input signals.  GraphJet maintains a [realtime bipartite interaction graph](https://mathworld.wolfram.com/BipartiteGraph.html) that  keeps track of user–tweet interactions over the most recent n hours and reads from Kafka. Each individual GraphJet serever can ingest one million graph edges per second and compute 500 recommendations/second. 
++ [GraphJet](https://github.com/twitter/GraphJet) - A realtime Java graph processing library that allows for in-memory processing on a single server and focuses on providing content recommendations. [Paper here.](http://www.vldb.org/pvldb/vol9/p1281-sharma.pdf) Recommendations are provided based on shared interests, correlated activities, and a number of other input signals.  GraphJet maintains a [realtime bipartite interaction graph](https://mathworld.wolfram.com/BipartiteGraph.html) that  keeps track of user–tweet interactions over the most recent n hours and reads from Kafka. Each individual GraphJet server can ingest one million graph edges per second and compute 500 recommendations/second. 
 
 They describe the reasons specifically for creating an in-memory DB in the GraphJet paper: 
 
@@ -130,8 +130,7 @@ GraphJet implements two random walk algorithms:
 GraphJet Architecture
 
 + A large portion of the traffic to GraphJet comes from
-clients who request content recommendations for a partic-
-ular user.
+clients who request content recommendations for a particular user.
 
 GraphJet includes [CLICK, FAVORITE, RETWEET, REPLY, AND TWEET as input node types](https://github.com/twitter/the-algorithm/blob/ec83d01dcaebf369444d75ed04b3625a0a645eb9/src/scala/com/twitter/recos/graph_common/NodeInfoHandler.scala#L22) and keeps track of left (input) and right(output) nodes. 
 
@@ -211,7 +210,7 @@ For users that have no explicit activity (eg dormant or new users), the candidat
 
 ## Mixers
 
-Before candidate tweets are sent to be ranked in the light and heavy rankers before being presented to the user, they are combined from their various candidate generation sources within several entites, one being the [CR Mixer,](https://github.com/twitter/the-algorithm/blob/main/cr-mixer/README.md) which fetches out-of-network recommended candidate tweets.
+Before candidate tweets are sent to be ranked in the light and heavy rankers before being presented to the user, they are combined from their various candidate generation sources within several entities, one being the [CR Mixer,](https://github.com/twitter/the-algorithm/blob/main/cr-mixer/README.md) which fetches out-of-network recommended candidate tweets.
 
 ### CR Mixer
 
@@ -308,7 +307,7 @@ These are the heuristics mentioned in the [blog](https://blog.twitter.com/engine
 - **Author Diversity**: Avoid too many consecutive Tweets from a single author.
   - See [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/product/scored_tweets/scorer/DiversityDiscountProvider.scala)
   - `score * ((1 - 0.25) * Math.pow(0.5, position) + 0.25)`
-  - If you have seen the author is the same feed refresh, the score of the tweet from the author havled (but with a floor)
+  - If you have seen the author is the same feed refresh, the score of the tweet from the author halved (but with a floor)
 
 - **Content Balance**: Ensure we are delivering a fair balance of In-Network and Out-of-Network Tweets.
   - (Contributions needed)
@@ -333,7 +332,7 @@ These are the heuristics mentioned in the [blog](https://blog.twitter.com/engine
   - See [code](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/functional_component/scorer/VerifiedAuthorScalingScorer.scala) and [default parameters](https://github.com/twitter/the-algorithm/blob/main/home-mixer/server/src/main/scala/com/twitter/home_mixer/param/HomeGlobalParams.scala#L89)
     - If the author of the candidate tweet is a Blue Verified and in the network of the user (i.e. user follows author?), the score of the tweet is multiplied by 4
     - If the author of the candidate tweet is a Blue Verified and out of the network of the user (i.e. does not follow author an within two degrees of connection), the score of the tweet from is multiplied by 2.
-  - This means that Blue Verified authors that the user does not follow is given a greater boost than the authors the user explictly follows.
+  - This means that Blue Verified authors that the user does not follow is given a greater boost than the authors the user explicitly follows.
   - Note that Twitter Blue is launched shortly after Elon Musk's takeover.
 
 
@@ -352,7 +351,7 @@ These are Twitter specific terms and names that keep coming up across different 
 
 ## Bias and Manipulation
 
-Cases of potential bias, manipulation, favouritism, hacks, etc. The focus on this repository is on the concrete, techincal aspects of the code, not speculating on anything twitter may or may not have done. That exercise is left to the reader, however, there are some technical aspects that should still be described about these popular accusations, this is a section for those. Unfortunately, much of the configuration that would contain specific instances of interventions is not in the code.
+Cases of potential bias, manipulation, favouritism, hacks, etc. The focus on this repository is on the concrete, technical aspects of the code, not speculating on anything twitter may or may not have done. That exercise is left to the reader, however, there are some technical aspects that should still be described about these popular accusations, this is a section for those. Unfortunately, much of the configuration that would contain specific instances of interventions is not in the code.
 
 ### Deboosting Rival Sites
 
@@ -363,14 +362,14 @@ It was long speculated youtube links get massively deboosted, and Spaces links m
 The Elon Musk / Democrat / Republican Code: [Now Removed](https://github.com/twitter/the-algorithm/commit/ec83d01dcaebf369444d75ed04b3625a0a645eb9). One of the first widely shared cases, falsely assuming this is something that directly affects Recommendations when it was actually for internal A/B testing, to monitor for effects (DDG is Duck Duck Goose, the A/B Testing Platfom). It was also mentioned in [the space](https://twitter.com/elonmusk/status/1641880448061120513) and denied there. However, a former twitter employee also offered an [alternative explanation](https://twitter.com/igb/status/1641910616939167745) (A/B Testing measures behavior, so one way or another Twitter is tuning your TL, indirectly).
 
 ### Ukraine
-There are two mentions related to Ukraine in the Twiter Algo repo. Whereas [one of them](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/visibilitylib/src/main/scala/com/twitter/visibility/rules/PublicInterestRules.scala#L54) is a flag for Ukraine-related misinformation used for moderation, or warning labels, there is another _safety label_ for Twitter Spaces called _[UkraineCrisisTopic](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/visibilitylib/src/main/scala/com/twitter/visibility/models/SpaceSafetyLabelType.scala#L39)_. Here are some facts about these labels and their function:
+There are two mentions related to Ukraine in the Twitter Algo repo. Whereas [one of them](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/visibilitylib/src/main/scala/com/twitter/visibility/rules/PublicInterestRules.scala#L54) is a flag for Ukraine-related misinformation used for moderation, or warning labels, there is another _safety label_ for Twitter Spaces called _[UkraineCrisisTopic](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/visibilitylib/src/main/scala/com/twitter/visibility/models/SpaceSafetyLabelType.scala#L39)_. Here are some facts about these labels and their function:
   * Each safety label "[describes a particular policy violation, and usually leads to reduced visibility of the labeled entity in product surfaces](https://github.com/twitter/the-algorithm/blob/main/visibilitylib/README.md)"
   * `SafetyLabel` results in tweet interstitial or notice, are publicly [documented here previously](https://help.twitter.com/en/resources/addressing-misleading-info) and specifically for [Armed Conflicts here](https://help.twitter.com/en/rules-and-policies/crisis-misinformation).
   * All [other Twitter Spaces safety labels](https://github.com/twitter/the-algorithm/blob/7f90d0ca342b928b479b512ec51ac2c3821f5922/visibilitylib/src/main/scala/com/twitter/visibility/models/SpaceSafetyLabelType.scala#L26) are related to misinformation, NSFW, toxic or harmful content, DMCA takedowns, etc.
 
 ## Changes
 
-+ 2 hours after it was released, [Twitter removed](https://github.com/twitter/the-algorithm/compare/ef4c5eb65e6e04fac4f0e1fa8bbeff56b75c1f98...ec83d01dcaebf369444d75ed04b3625a0a645eb9) feature flags that specifically higlighted Elon's account
++ 2 hours after it was released, [Twitter removed](https://github.com/twitter/the-algorithm/compare/ef4c5eb65e6e04fac4f0e1fa8bbeff56b75c1f98...ec83d01dcaebf369444d75ed04b3625a0a645eb9) feature flags that specifically highlighted Elon's account
 
 ## Discussions about The Algorithm Elsewhere
 
