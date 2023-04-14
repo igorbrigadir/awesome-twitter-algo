@@ -194,14 +194,14 @@ If a user [opted out of](https://github.com/twitter/the-algorithm/blob/138bb5199
 --- 
 
 ### RealGraph
-
-[RealGraph](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/interaction_graph/README.md) is a pipeline that aims to predict the top K users that a given user would interact with given some historical interaction features. The ETL portions are implemented in scio, while the ML training/scoring portions are all done in BigQuery. Given the huge space of users O(1e9) and to avoid the huge O(N**2) complexity of storing every interaction, Twitter reduces the amount of data processed by adopting the following methods:
-- Getting only users from recent follows, direct interactions (likes, profile clicks), and push notification open events [code](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/interaction_graph/scio/ml/labels/InteractionGraphLabelsJob.scala#L57-L70). Note that while the folder mentions `labels`, it is used as a set of positive examples to generate the candidates, as can be seen from this [BQ query](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/interaction_graph/bqe/scoring/candidates.sql#L15). 
+[RealGraph](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/interaction_graph/README.md) is a pipeline that aims to predict the top K users that a given user would interact with given some historical interaction features. The ETL portions are implemented in scio, while the ML training/scoring portions are all done in BigQuery. Given the huge space of users O(1e9) and to avoid the huge O(N**2) complexity of storing all interactions between every possible pair of users, Twitter reduces the amount of data processed by adopting the following methods:
+- Getting only users from recent follows, direct interactions (likes, profile clicks), and push notification open events [(code)](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/interaction_graph/scio/ml/labels/InteractionGraphLabelsJob.scala#L57-L70). Note that while the folder mentions `labels`, it is used as a set of positive examples to generate the candidates, as can be seen from this [BQ query](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/interaction_graph/bqe/scoring/candidates.sql#L15). 
 - Using only a very narrow set of 10 highly informative features [here](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/interaction_graph/bqe/scoring/candidates.sql#L25-L32).
-- Scoring is done with a xgboost model trained in BQML, and scored in BQML [BQ one-liner](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/interaction_graph/bqe/scoring/scoring.sql#L24).
+- Scoring is done with a xgboost model trained in BQML, and scored in BQML [(BQ one-liner)](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/interaction_graph/bqe/scoring/scoring.sql#L24).
 
-For users that have no explicit activity (eg dormant or new users), the candidates are backfilled using the top k tweeting accounts that the given user follows [BQ query](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/interaction_graph/bqe/scoring/candidates.sql#L20). This is important to ensure that Twitter is still able to send notifications/emails to dormant users, or even to make sure they have something ready if and when the dormant user returns.
+For users that have no explicit activity (eg dormant or new users), the candidates are backfilled using the top k tweeting accounts that the given user follows [(BQ query)](https://github.com/twitter/the-algorithm/blob/main/src/scala/com/twitter/interaction_graph/bqe/scoring/candidates.sql#L20). This is important to ensure that Twitter is still able to send notifications/emails to dormant users, or even to make sure they have something ready if and when the dormant user returns.
 
+---
 
 ### TweepCred
 --- 
