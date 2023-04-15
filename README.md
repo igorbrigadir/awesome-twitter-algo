@@ -188,8 +188,49 @@ If a user [opted out of](https://github.com/twitter/the-algorithm/blob/138bb5199
 ### Hypothetical Architecture Diagram
 <img width="487" alt="Simclusters" src="https://user-images.githubusercontent.com/3837836/230660246-6ce676c5-204d-47fa-9909-013565bec142.png">
 
+--- 
 
 ### TwHIN
+
+[TwHIN Code](https://github.com/twitter/the-algorithm-ml/tree/main/projects/twhin),[TwHIN Paper](https://arxiv.org/pdf/2202.05387.pdf)
+
+  Twitter's Heterogeneous Information Network (HIN) is a graph network where the nodes/vertices of the graph represent multiple entity types, and the edges represent one of many interaction types between the entities. 
+  
+  The following entity and relation types are represented:
+  - **Entity Types (Nodes)**: User, Tweet, Advertiser, Ad
+  - **Relation Types (Edges)**: Follow, Authors, Favourites, Replies, Retweets, Promotes, Clicks
+  
+  The multi-type, multi-relation network enables the resultant TwHIN embeddings to capture signals such as:
+  - social signals (follow-graph)
+  - content engagement signals (tweet, image, and video engagements)
+  - advertisement engagements
+
+## TwHIN at Twitter
+The TwHIN approach is applied to form two different heterogenous networks, each centered around a high coverage relation:
+
+### 1. TwHIN-Follow
+[kNN-Embed paper](https://arxiv.org/abs/2205.06205), [Huggingface Dataset](https://huggingface.co/datasets/Twitter/TwitterFollowGraph)
+
+A Twitter HIN centered around a User-User follow graph. 
+Graph of User (consumer) to Author (producer) nodes, where an edge represents a user "following" an author engagement
+  - 261M edges and 15.5M vertices
+  - Max-degree of 900𝐾 and a min-degree of 5.
+
+### 2.TwHIN-Engagement
+[MiCRO paper](https://arxiv.org/abs/2210.16271), [Huggingface Dataset](https://huggingface.co/datasets/Twitter/TwitterFaveGraph)
+
+A Twitter HIN centered around a User-Tweet engagement graph. 
+Graph of User to Tweet nodes, where an edge represents a "fave" engagement
+- 6.7M user nodes, 13M Tweet nodes, and 283M edges
+- For users: max-degree of 100 and min-degree of 1
+- For tweets: max-degree of 280k and min-degree of 5.
+
+Each of the TwHIN datasets released on Huggingface have been heavily subsampled, and anonymized due to privacy restrictions.
+
+## Training 
+- [local.yaml](https://github.com/twitter/the-algorithm-ml/blob/main/projects/twhin/config/local.yaml) defines some training configurations
+- [machines.yaml](https://github.com/twitter/the-algorithm-ml/blob/main/projects/twhin/machines.yaml) defines the resources for training the TWHIN embeddings. Notably, it specifies 16x A100 GPUs & 1.4TB of RAM.
+
 --- 
 
 ### RealGraph
